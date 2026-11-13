@@ -1,0 +1,50 @@
+:root {
+  --color-primario: #1d4ed8;
+  --color-primario-oscuro: #1e40af;
+  --color-fondo: #f4f6fb;
+  --color-superficie: #ffffff;
+  --color-texto: #0f172a;
+  --color-texto-suave: #64748b;
+  --color-borde: #cbd5e1;
+  --color-error: #b91c1c;
+  --color-error-fondo: #fef2f2;
+
+  /* Estados de un turno */
+  --estado-pendiente: #f59e0b;
+  --estado-confirmado: #2563eb;
+  --estado-en-atencion: #16a34a;
+  --estado-atendido: #7c3aed;
+  --estado-cancelado: #dc2626;
+  --estado-ausente: #6b7280;
+
+  --radio: 10px;
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  background: var(--color-fondo);
+  color: var(--color-texto);
+}
+
+.centrado { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px; }
+.tarjeta { background: var(--color-superficie); border-radius: 14px; padding: 32px; width: min(400px, 100%); box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08); }
+.tarjeta h1 { margin: 0 0 4px; font-size: 1.6rem; }
+.suave { color: var(--color-texto-suave); margin: 0 0 20px; }
+
+.formulario { display: flex; flex-direction: column; gap: 14px; }
+.campo { display: flex; flex-direction: column; gap: 6px; font-size: 0.9rem; font-weight: 600; }
+.campo input { padding: 12px 14px; border: 1px solid var(--color-borde); border-radius: var(--radio); font-size: 1rem; }
+.campo input:focus { outline: none; border-color: var(--color-primario); box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.15); }
+
+.boton { padding: 12px; border: 0; border-radius: var(--radio); background: var(--color-primario); color: white; font-size: 1rem; font-weight: 600; cursor: pointer; transition: transform 160ms var(--ease-out), background-color 160ms ease; }
+.boton:hover { background: var(--color-primario-oscuro); }
+.boton:active { transform: scale(0.97); }
+.boton:disabled { opacity: 0.7; cursor: default; }
+.boton.secundario { background: #e8ecf8; color: var(--color-primario); }
+
+.error { margin: 0; padding: 10px 12px; border-radius: var(--radio); background: var(--color-error-fondo); color: var(--color-error); font-size: 0.9rem; }
+.acciones { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
