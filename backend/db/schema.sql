@@ -54,3 +54,5 @@ CREATE TABLE IF NOT EXISTS recuperaciones (
   KEY idx_recuperaciones_usuario (usuario_id),
   CONSTRAINT fk_recuperaciones_usuario FOREIGN KEY (usuario_id) REFERENCES usuarios (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+ALTER TABLE medicos ADD UNIQUE INDEX IF NOT EXISTS uq_medicos_matricula (matricula);

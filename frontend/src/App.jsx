@@ -5,9 +5,15 @@ import { MENUS } from './menus';
 import CambiarClave from './pages/CambiarClave';
 import Inicio from './pages/Inicio';
 import Login from './pages/Login';
+import Medicos from './pages/Medicos';
 import Olvide from './pages/Olvide';
 import Proximamente from './pages/Proximamente';
 import Restablecer from './pages/Restablecer';
+
+// Pantallas ya armadas: 'rol/ruta' -> componente
+const PAGINAS = {
+  'secretaria/medicos': Medicos,
+};
 
 export default function App() {
   return (
@@ -25,9 +31,16 @@ export default function App() {
             element={<RutaProtegida roles={[rol]}><Layout /></RutaProtegida>}
           >
             <Route index element={<Inicio />} />
-            {opciones.filter((o) => o.a).map((o) => (
-              <Route key={o.a} path={o.a} element={<Proximamente titulo={o.texto} dia={o.dia} />} />
-            ))}
+            {opciones.filter((o) => o.a).map((o) => {
+              const Pagina = PAGINAS[`${rol}/${o.a}`];
+              return (
+                <Route
+                  key={o.a}
+                  path={o.a}
+                  element={Pagina ? <Pagina /> : <Proximamente titulo={o.texto} dia={o.dia} />}
+                />
+              );
+            })}
           </Route>
         ))}
 
