@@ -1,6 +1,8 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { apiFetch } from '../api/client';
+import { mensajeDeError } from '../api/errores';
+import { guardarSesion, rutaInicio } from '../auth';
 
 export default function Login() {
   const [dni, setDni] = useState('');
@@ -15,11 +17,10 @@ export default function Login() {
     setCargando(true);
     try {
       const r = await apiFetch('/auth/login', { method: 'POST', body: JSON.stringify({ dni, password }) });
-      localStorage.setItem('token', r.token);
-      localStorage.setItem('usuario', JSON.stringify(r.usuario));
-      navigate('/panel');
+      guardarSesion(r.token, r.usuario);
+      navigate(rutaInicio(r.usuario));
     } catch (err) {
-      setError(err instanceof TypeError ? 'No pudimos conectarnos con el servidor.' : err.message);
+      setError(mensajeDeError(err));
     } finally {
       setCargando(false);
     }
@@ -50,6 +51,7 @@ export default function Login() {
             {cargando ? 'Entrando...' : 'Ingresar'}
           </button>
         </form>
+        <p className="pie-tarjeta"><Link className="enlace" to="/olvide">¿Olvidaste tu contraseña?</Link></p>
       </div>
     </div>
   );

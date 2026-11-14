@@ -19,6 +19,12 @@ export async function apiFetch(ruta, opciones = {}) {
       localStorage.removeItem('usuario');
       if (window.location.pathname !== '/login') window.location.href = '/login';
     }
+    // Clave temporal: hay que cambiarla antes de seguir
+    if (respuesta.status === 403 && datos.codigo === 'CAMBIAR_CLAVE') {
+      const usuario = JSON.parse(localStorage.getItem('usuario') || 'null');
+      if (usuario) localStorage.setItem('usuario', JSON.stringify({ ...usuario, debe_cambiar_clave: true }));
+      if (window.location.pathname !== '/cambiar-clave') window.location.href = '/cambiar-clave';
+    }
     const error = new Error(datos.error || 'Error en la solicitud');
     error.codigo = datos.codigo;
     error.datos = datos;

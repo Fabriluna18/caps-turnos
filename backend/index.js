@@ -2,6 +2,12 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const pool = require('./db');
+const authRoutes = require('./routes/auth');
+
+if (!process.env.JWT_SECRET) {
+  console.error('Falta JWT_SECRET en el archivo .env');
+  process.exit(1);
+}
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -13,6 +19,8 @@ app.use(express.json());
 app.get('/', (req, res) => {
   res.json({ mensaje: 'API de CAPS Turnos funcionando' });
 });
+
+app.use('/api/auth', authRoutes);
 
 // Ruta de prueba de la conexión (la sacamos antes de publicar)
 app.get('/db-test', async (req, res) => {

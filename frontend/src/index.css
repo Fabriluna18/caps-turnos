@@ -48,3 +48,47 @@ body {
 
 .error { margin: 0; padding: 10px 12px; border-radius: var(--radio); background: var(--color-error-fondo); color: var(--color-error); font-size: 0.9rem; }
 .acciones { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
+
+/* ===== Día 3: menú por rol y pantallas de contraseña ===== */
+:root {
+  --color-lateral: #0f1f4a;
+  --color-lateral-activo: #1d4ed8;
+}
+
+.enlace { color: var(--color-primario); font-weight: 600; text-decoration: none; }
+.enlace:hover { text-decoration: underline; }
+.exito { margin: 0; padding: 10px 12px; border-radius: var(--radio); background: #f0fdf4; color: #15803d; font-size: 0.9rem; }
+.pie-tarjeta { margin: 18px 0 0; text-align: center; font-size: 0.9rem; }
+
+.pestanas { display: flex; gap: 6px; margin-bottom: 14px; }
+.pestanas button { flex: 1; padding: 9px; border: 0; border-radius: var(--radio); background: #eef2ff; color: var(--color-primario); font-weight: 600; cursor: pointer; transition: background-color 160ms ease, color 160ms ease; }
+.pestanas button.activa { background: var(--color-primario); color: white; }
+
+.app { display: flex; min-height: 100vh; }
+.lateral { width: 240px; flex-shrink: 0; position: sticky; top: 0; height: 100vh; overflow-y: auto; background: var(--color-lateral); color: white; padding: 20px 14px; display: flex; flex-direction: column; gap: 6px; }
+.lateral-marca { display: flex; flex-direction: column; margin: 0 8px 18px; }
+.lateral-marca span { font-size: 1.5rem; font-weight: 800; letter-spacing: 0.02em; }
+.lateral-marca small { opacity: 0.7; }
+.lateral nav { display: flex; flex-direction: column; gap: 4px; }
+.lateral nav a { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: var(--radio); color: rgba(255, 255, 255, 0.85); text-decoration: none; transition: background-color 160ms ease; }
+.lateral nav a:hover { background: rgba(255, 255, 255, 0.1); }
+.lateral nav a.active { background: var(--color-lateral-activo); color: white; font-weight: 600; }
+
+.lateral-usuario { margin-top: auto; display: flex; flex-direction: column; gap: 6px; padding: 12px; background: rgba(255, 255, 255, 0.08); border-radius: var(--radio); font-size: 0.9rem; }
+.lateral-usuario span { opacity: 0.7; font-size: 0.8rem; }
+.lateral-usuario a, .lateral-usuario button { display: flex; align-items: center; gap: 6px; padding: 4px 0; color: rgba(255, 255, 255, 0.85); background: none; border: 0; font: inherit; font-size: 0.85rem; text-align: left; text-decoration: none; cursor: pointer; }
+.lateral-usuario a:hover, .lateral-usuario button:hover { color: white; }
+
+.contenido { flex: 1; min-width: 0; padding: 28px 32px; }
+.contenido h1 { margin-top: 0; }
+.panel-prueba { margin-top: 20px; }
+.proximamente { text-align: center; padding: 56px 16px; color: var(--color-primario); }
+.proximamente h1 { color: var(--color-texto); }
+
+@media (max-width: 800px) {
+  .app { flex-direction: column; }
+  .lateral { position: static; width: 100%; height: auto; }
+  .lateral nav { flex-direction: row; flex-wrap: wrap; }
+  .lateral-usuario { margin-top: 8px; }
+  .contenido { padding: 20px 16px; }
+}
