@@ -56,3 +56,37 @@ CREATE TABLE IF NOT EXISTS recuperaciones (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 ALTER TABLE medicos ADD UNIQUE INDEX IF NOT EXISTS uq_medicos_matricula (matricula);
+
+-- Día 5: horarios de atención, licencias y feriados
+CREATE TABLE IF NOT EXISTS horarios (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  medico_id INT UNSIGNED NOT NULL,
+  dia_semana TINYINT UNSIGNED NOT NULL,
+  hora_inicio TIME NOT NULL,
+  hora_fin TIME NOT NULL,
+  duracion_min SMALLINT UNSIGNED NOT NULL,
+  creado_en TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  KEY idx_horarios_medico_dia (medico_id, dia_semana),
+  CONSTRAINT fk_horarios_medico FOREIGN KEY (medico_id) REFERENCES medicos (usuario_id) ON DELETE CASCADE,
+  CONSTRAINT chk_horarios_dia CHECK (dia_semana BETWEEN 1 AND 7),
+  CONSTRAINT chk_horarios_horas CHECK (hora_fin > hora_inicio)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS licencias (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  medico_id INT UNSIGNED NOT NULL,
+  desde DATE NOT NULL,
+  hasta DATE NOT NULL,
+  motivo VARCHAR(100) NULL,
+  creado_en TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  KEY idx_licencias_medico (medico_id, desde, hasta),
+  CONSTRAINT fk_licencias_medico FOREIGN KEY (medico_id) REFERENCES medicos (usuario_id) ON DELETE CASCADE,
+  CONSTRAINT chk_licencias_fechas CHECK (hasta >= desde)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS feriados (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  fecha DATE NOT NULL,
+  descripcion VARCHAR(100) NOT NULL,
+  UNIQUE KEY uq_feriados_fecha (fecha)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

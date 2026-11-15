@@ -9,10 +9,12 @@ import Medicos from './pages/Medicos';
 import Olvide from './pages/Olvide';
 import Proximamente from './pages/Proximamente';
 import Restablecer from './pages/Restablecer';
+import Horarios from './pages/Horarios';
 
 // Pantallas ya armadas: 'rol/ruta' -> componente
 const PAGINAS = {
   'secretaria/medicos': Medicos,
+  'secretaria/horarios': Horarios,
 };
 
 export default function App() {
