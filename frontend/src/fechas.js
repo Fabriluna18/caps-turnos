@@ -12,3 +12,12 @@ export function diaDeSemana(iso) {
   const [a, m, d] = iso.split('-').map(Number);
   return new Date(a, m - 1, d).toLocaleDateString('es-AR', { weekday: 'long' });
 }
+
+// "1990-05-14" -> 36 (años cumplidos hoy)
+export function edad(iso) {
+  const [a, m, d] = iso.split('-').map(Number);
+  const hoy = new Date();
+  let anios = hoy.getFullYear() - a;
+  if (hoy.getMonth() + 1 < m || (hoy.getMonth() + 1 === m && hoy.getDate() < d)) anios -= 1;
+  return anios;
+}

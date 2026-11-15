@@ -1,20 +1,14 @@
-const crypto = require('crypto');
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const pool = require('../db');
 const { verificarToken, permitir } = require('../middleware/auth');
+const { claveTemporal } = require('../clave');
 
 const router = express.Router();
 
 // Todo lo de acá es solo para la secretaría
 router.use(verificarToken, permitir('secretaria'));
 
-// Sin caracteres que se confunden (0/O, 1/l/I)
-const LETRAS = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';
-
-function claveTemporal() {
-  return Array.from({ length: 10 }, () => LETRAS[crypto.randomInt(LETRAS.length)]).join('');
-}
 
 function idValido(valor) {
   const n = Number(valor);

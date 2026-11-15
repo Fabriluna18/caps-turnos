@@ -6,6 +6,7 @@ const authRoutes = require('./routes/auth');
 const especialidadRoutes = require('./routes/especialidades');
 const medicoRoutes = require('./routes/medicos');
 const horarioRoutes = require('./routes/horarios');
+const pacienteRoutes = require('./routes/pacientes');
 
 if (!process.env.JWT_SECRET) {
   console.error('Falta JWT_SECRET en el archivo .env');
@@ -28,6 +29,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/especialidades', especialidadRoutes);
 app.use('/api/medicos', medicoRoutes);
 app.use('/api/horarios', horarioRoutes);
+app.use('/api/pacientes', pacienteRoutes);
 
 // Ruta de prueba de la conexión (la sacamos antes de publicar)
 app.get('/db-test', async (req, res) => {

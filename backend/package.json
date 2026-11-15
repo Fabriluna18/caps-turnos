@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node index.js",
     "dev": "nodemon index.js",
-    "demo": "node scripts/crear-demo.js"
+    "demo": "node scripts/crear-demo.js",
+    "demo:pacientes": "node scripts/crear-pacientes-demo.js"
   },
   "keywords": [],
   "author": "",
