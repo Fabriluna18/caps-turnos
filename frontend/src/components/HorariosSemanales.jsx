@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Pencil, Trash2 } from 'lucide-react';
+import { Ban, Pencil, RotateCcw } from 'lucide-react';
 import { apiFetch } from '../api/client';
 import { mensajeDeError } from '../api/errores';
 
@@ -84,20 +84,20 @@ export default function HorariosSemanales({ medicoId }) {
     }
   };
 
-  const eliminar = async (h) => {
-    if (!window.confirm(`¿Eliminar el horario del ${DIAS[h.dia_semana - 1].toLowerCase()} de ${h.hora_inicio} a ${h.hora_fin}?`)) return;
+  const cambiarEstado = async (h) => {
     setError('');
     setOk('');
     try {
-      await apiFetch(`/horarios/${h.id}`, { method: 'DELETE' });
+      await apiFetch(`/horarios/${h.id}/estado`, { method: 'PUT', body: JSON.stringify({ activo: !h.activo }) });
       if (editando === h.id) terminarEdicion();
+      setOk(h.activo ? 'Horario desactivado' : 'Horario reactivado');
       await recargar();
     } catch (err) {
       setError(mensajeDeError(err));
     }
   };
 
-  const total = horarios.reduce((suma, h) => suma + h.turnos, 0);
+  const total = horarios.filter((h) => h.activo).reduce((suma, h) => suma + h.turnos, 0);
 
   return (
     <div className="panel">
@@ -161,7 +161,7 @@ export default function HorariosSemanales({ medicoId }) {
       <div className="info">
         <strong>Cómo se calculan los turnos</strong>
         La cantidad de turnos sale del intervalo. Por ejemplo, de 08:00 a 12:00 cada 30 minutos son 8 turnos.
-        Para atender mañana y tarde, cargá dos bloques.
+        Para atender mañana y tarde, cargá dos bloques. Los horarios no se borran: se desactivan y quedan guardados.
       </div>
 
       <h3 style={{ margin: '20px 0 8px' }}>Horarios cargados</h3>
@@ -171,23 +171,28 @@ export default function HorariosSemanales({ medicoId }) {
         <p className="suave">Este médico todavía no tiene horarios cargados.</p>
       ) : (
         <>
-          <p className="resumen-semana">Turnos por semana: <strong>{total}</strong></p>
+          <p className="resumen-semana">Turnos por semana (solo los vigentes): <strong>{total}</strong></p>
           <div className="tabla-scroll">
             <table className="tabla">
               <thead>
-                <tr><th>Día</th><th>Horario</th><th>Cada cuánto</th><th>Turnos</th><th></th></tr>
+                <tr><th>Día</th><th>Horario</th><th>Cada cuánto</th><th>Turnos</th><th>Estado</th><th></th></tr>
               </thead>
               <tbody>
                 {horarios.map((h) => (
-                  <tr key={h.id}>
+                  <tr key={h.id} className={h.activo ? '' : 'fila-baja'}>
                     <td><strong>{DIAS[h.dia_semana - 1]}</strong></td>
                     <td>{h.hora_inicio} a {h.hora_fin}</td>
                     <td>{h.duracion_min} min</td>
                     <td>{h.turnos}</td>
+                    <td><span className={`etiqueta ${h.activo ? 'activo' : 'baja'}`}>{h.activo ? 'Vigente' : 'Desactivado'}</span></td>
                     <td>
                       <div className="acciones-fila">
-                        <button className="boton-chico" onClick={() => editar(h)}><Pencil size={14} /> Editar</button>
-                        <button className="boton-chico peligro" onClick={() => eliminar(h)}><Trash2 size={14} /> Eliminar</button>
+                        {h.activo && (
+                          <button className="boton-chico" onClick={() => editar(h)}><Pencil size={14} /> Editar</button>
+                        )}
+                        <button className="boton-chico" onClick={() => cambiarEstado(h)}>
+                          {h.activo ? <><Ban size={14} /> Desactivar</> : <><RotateCcw size={14} /> Reactivar</>}
+                        </button>
                       </div>
                     </td>
                   </tr>

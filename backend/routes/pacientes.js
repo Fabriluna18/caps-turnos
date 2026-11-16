@@ -3,6 +3,7 @@ const bcrypt = require('bcryptjs');
 const pool = require('../db');
 const { verificarToken, permitir } = require('../middleware/auth');
 const { claveTemporal } = require('../clave');
+const { contarTurnosFuturos, textoTurnos } = require('../turnos-futuros');
 
 const router = express.Router();
 
@@ -203,6 +204,15 @@ router.put('/:id/estado', async (req, res) => {
     const [existe] = await pool.query("SELECT id FROM usuarios WHERE id = ? AND rol = 'paciente'", [id]);
     if (existe.length === 0) return res.status(404).json({ error: 'Paciente no encontrado' });
 
+    if (!req.body.activo) {
+      const n = await contarTurnosFuturos(pool, { pacienteId: id });
+      if (n > 0) {
+        return res.status(409).json({
+          error: `Este paciente tiene ${textoTurnos(n)} reservados a partir de ahora. Cancelalos antes de darlo de baja.`,
+        });
+      }
+    }
+
     await pool.query('UPDATE usuarios SET activo = ? WHERE id = ?', [req.body.activo ? 1 : 0, id]);
     res.json({ activo: req.body.activo });
   } catch (error) {
@@ -233,26 +243,5 @@ router.post('/:id/reset-clave', async (req, res) => {
   }
 });
 
-// Eliminación definitiva: no se puede si tiene turnos o recetas registrados
-router.delete('/:id', async (req, res) => {
-  const id = idValido(req.params.id);
-  if (!id) return res.status(400).json({ error: 'Paciente inválido' });
-
-  try {
-    const [existe] = await pool.query("SELECT id FROM usuarios WHERE id = ? AND rol = 'paciente'", [id]);
-    if (existe.length === 0) return res.status(404).json({ error: 'Paciente no encontrado' });
-
-    await pool.query("DELETE FROM usuarios WHERE id = ? AND rol = 'paciente'", [id]);
-    res.json({ mensaje: 'Paciente eliminado' });
-  } catch (error) {
-    if (error.code === 'ER_ROW_IS_REFERENCED_2') {
-      return res.status(409).json({
-        error: 'Este paciente tiene turnos o recetas registrados, así que no se puede eliminar. Dalo de baja.',
-      });
-    }
-    console.error(error);
-    res.status(500).json({ error: 'Error del servidor' });
-  }
-});
 
 module.exports = router;

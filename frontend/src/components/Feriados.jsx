@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Trash2 } from 'lucide-react';
+import { Ban, RotateCcw } from 'lucide-react';
 import { apiFetch } from '../api/client';
 import { mensajeDeError } from '../api/errores';
 import { diaDeSemana, formatoFecha, hoyISO } from '../fechas';
@@ -38,12 +38,12 @@ export default function Feriados() {
     }
   };
 
-  const eliminar = async (f) => {
-    if (!window.confirm(`¿Eliminar "${f.descripcion}" (${formatoFecha(f.fecha)})?`)) return;
+  const cambiarEstado = async (f) => {
     setError('');
     setOk('');
     try {
-      await apiFetch(`/horarios/feriados/${f.id}`, { method: 'DELETE' });
+      await apiFetch(`/horarios/feriados/${f.id}/estado`, { method: 'PUT', body: JSON.stringify({ activo: !f.activo }) });
+      setOk(f.activo ? 'Feriado desactivado' : 'Feriado reactivado');
       await recargar();
     } catch (err) {
       setError(mensajeDeError(err));
@@ -55,7 +55,7 @@ export default function Feriados() {
       <h2>Feriados y días sin atención</h2>
       <p className="suave" style={{ marginTop: 0 }}>
         Valen para todos los médicos: ese día el CAPS no da turnos. Los feriados trasladables cambian de fecha cada año,
-        así que se cargan a mano.
+        así que se cargan a mano. Los que se desactivan quedan guardados.
       </p>
       {error && <p className="error" role="alert">{error}</p>}
       {ok && <p className="exito" role="status">{ok}</p>}
@@ -75,17 +75,20 @@ export default function Feriados() {
         <div className="tabla-scroll" style={{ marginTop: 16 }}>
           <table className="tabla">
             <thead>
-              <tr><th>Fecha</th><th>Descripción</th><th></th></tr>
+              <tr><th>Fecha</th><th>Descripción</th><th>Estado</th><th></th></tr>
             </thead>
             <tbody>
               {feriados.map((f) => (
-                <tr key={f.id}>
+                <tr key={f.id} className={f.activo ? '' : 'fila-baja'}>
                   <td style={{ whiteSpace: 'nowrap' }}>
                     <strong>{formatoFecha(f.fecha)}</strong> <span className="suave">{diaDeSemana(f.fecha)}</span>
                   </td>
                   <td>{f.descripcion}</td>
+                  <td><span className={`etiqueta ${f.activo ? 'activo' : 'baja'}`}>{f.activo ? 'Vigente' : 'Desactivado'}</span></td>
                   <td>
-                    <button className="boton-chico peligro" onClick={() => eliminar(f)}><Trash2 size={14} /> Eliminar</button>
+                    <button className="boton-chico" onClick={() => cambiarEstado(f)}>
+                      {f.activo ? <><Ban size={14} /> Desactivar</> : <><RotateCcw size={14} /> Reactivar</>}
+                    </button>
                   </td>
                 </tr>
               ))}

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Trash2 } from 'lucide-react';
+import { Ban, RotateCcw } from 'lucide-react';
 import { apiFetch } from '../api/client';
 import { mensajeDeError } from '../api/errores';
 import { formatoFecha, hoyISO } from '../fechas';
@@ -42,12 +42,12 @@ export default function Licencias({ medicoId }) {
     }
   };
 
-  const eliminar = async (l) => {
-    if (!window.confirm(`¿Eliminar la licencia del ${formatoFecha(l.desde)} al ${formatoFecha(l.hasta)}?`)) return;
+  const cambiarEstado = async (l) => {
     setError('');
     setOk('');
     try {
-      await apiFetch(`/horarios/licencias/${l.id}`, { method: 'DELETE' });
+      await apiFetch(`/horarios/licencias/${l.id}/estado`, { method: 'PUT', body: JSON.stringify({ activa: !l.activa }) });
+      setOk(l.activa ? 'Licencia cancelada' : 'Licencia reactivada');
       await recargar();
     } catch (err) {
       setError(mensajeDeError(err));
@@ -58,7 +58,7 @@ export default function Licencias({ medicoId }) {
     <div className="panel">
       <h2>Licencias</h2>
       <p className="suave" style={{ marginTop: 0 }}>
-        En estas fechas el médico no atiende, aunque tenga horarios cargados.
+        En estas fechas el médico no atiende, aunque tenga horarios cargados. Las licencias canceladas quedan guardadas.
       </p>
       {error && <p className="error" role="alert">{error}</p>}
       {ok && <p className="exito" role="status">{ok}</p>}
@@ -89,16 +89,19 @@ export default function Licencias({ medicoId }) {
         <div className="tabla-scroll" style={{ marginTop: 16 }}>
           <table className="tabla">
             <thead>
-              <tr><th>Desde</th><th>Hasta</th><th>Motivo</th><th></th></tr>
+              <tr><th>Desde</th><th>Hasta</th><th>Motivo</th><th>Estado</th><th></th></tr>
             </thead>
             <tbody>
               {licencias.map((l) => (
-                <tr key={l.id}>
+                <tr key={l.id} className={l.activa ? '' : 'fila-baja'}>
                   <td>{formatoFecha(l.desde)}</td>
                   <td>{formatoFecha(l.hasta)}</td>
                   <td>{l.motivo || '-'}</td>
+                  <td><span className={`etiqueta ${l.activa ? 'activo' : 'baja'}`}>{l.activa ? 'Vigente' : 'Cancelada'}</span></td>
                   <td>
-                    <button className="boton-chico peligro" onClick={() => eliminar(l)}><Trash2 size={14} /> Eliminar</button>
+                    <button className="boton-chico" onClick={() => cambiarEstado(l)}>
+                      {l.activa ? <><Ban size={14} /> Cancelar</> : <><RotateCcw size={14} /> Reactivar</>}
+                    </button>
                   </td>
                 </tr>
               ))}

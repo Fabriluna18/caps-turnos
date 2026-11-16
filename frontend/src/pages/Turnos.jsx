@@ -55,7 +55,7 @@ export default function Turnos() {
           <div className="filtros">
             <select value={especialidadId} onChange={(e) => elegirEspecialidad(e.target.value)} aria-label="Especialidad">
               <option value="">Todas las especialidades</option>
-              {especialidades.map((e) => (
+              {especialidades.filter((e) => e.activa).map((e) => (
                 <option key={e.id} value={e.id}>{e.nombre}</option>
               ))}
             </select>

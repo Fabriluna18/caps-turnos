@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Eye, KeyRound, Pencil, Search, Trash2, UserCheck, UserX } from 'lucide-react';
+import { Eye, KeyRound, Pencil, Search, UserCheck, UserX } from 'lucide-react';
 import { apiFetch } from '../api/client';
 import { mensajeDeError } from '../api/errores';
 import ClaveTemporal from '../components/ClaveTemporal';
@@ -126,20 +126,6 @@ export default function Pacientes() {
     }
   };
 
-  const eliminar = async (p) => {
-    if (!window.confirm(`¿Eliminar a ${p.nombre} ${p.apellido}? Esta acción no se puede deshacer.`)) return;
-    limpiarMensajes();
-    try {
-      await apiFetch(`/pacientes/${p.id}`, { method: 'DELETE' });
-      setOk(`${p.nombre} ${p.apellido} fue eliminado`);
-      if (editando === p.id) cancelarEdicion();
-      if (ficha && ficha.id === p.id) setFicha(null);
-      if (datos.items.length === 1 && pagina > 1) setPagina(pagina - 1);
-      recargar();
-    } catch (err) {
-      setError(mensajeDeError(err));
-    }
-  };
 
   const totalPaginas = Math.max(1, Math.ceil(datos.total / datos.por_pagina));
   const desde = datos.total === 0 ? 0 : (datos.pagina - 1) * datos.por_pagina + 1;
@@ -303,7 +289,6 @@ export default function Pacientes() {
                             {p.activo ? <><UserX size={14} /> Dar de baja</> : <><UserCheck size={14} /> Reactivar</>}
                           </button>
                           <button className="boton-chico" onClick={() => nuevaClave(p)}><KeyRound size={14} /> Nueva clave</button>
-                          <button className="boton-chico peligro" onClick={() => eliminar(p)}><Trash2 size={14} /> Eliminar</button>
                         </div>
                       </td>
                     </tr>

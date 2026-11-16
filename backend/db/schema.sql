@@ -114,3 +114,9 @@ CREATE TABLE IF NOT EXISTS turnos (
   CONSTRAINT fk_turnos_creado_por FOREIGN KEY (creado_por) REFERENCES usuarios (id) ON DELETE SET NULL,
   CONSTRAINT chk_turnos_duracion CHECK (duracion_min > 0)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Día 8: nada se borra, solo se desactiva
+ALTER TABLE especialidades ADD COLUMN IF NOT EXISTS activa TINYINT(1) NOT NULL DEFAULT 1;
+ALTER TABLE horarios ADD COLUMN IF NOT EXISTS activo TINYINT(1) NOT NULL DEFAULT 1;
+ALTER TABLE licencias ADD COLUMN IF NOT EXISTS activa TINYINT(1) NOT NULL DEFAULT 1;
+ALTER TABLE feriados ADD COLUMN IF NOT EXISTS activo TINYINT(1) NOT NULL DEFAULT 1;

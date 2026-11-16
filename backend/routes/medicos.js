@@ -3,6 +3,7 @@ const bcrypt = require('bcryptjs');
 const pool = require('../db');
 const { verificarToken, permitir } = require('../middleware/auth');
 const { claveTemporal } = require('../clave');
+const { contarTurnosFuturos, textoTurnos } = require('../turnos-futuros');
 
 const router = express.Router();
 
@@ -77,8 +78,8 @@ router.post('/', async (req, res) => {
 
   const conexion = await pool.getConnection();
   try {
-    const [esp] = await conexion.query('SELECT id FROM especialidades WHERE id = ?', [datos.especialidad_id]);
-    if (esp.length === 0) return res.status(400).json({ error: 'La especialidad no existe' });
+    const [esp] = await conexion.query('SELECT id FROM especialidades WHERE id = ? AND activa = 1 AND activa = 1', [datos.especialidad_id]);
+    if (esp.length === 0) return res.status(400).json({ error: 'La especialidad no existe o está desactivada' });
 
     const clave = claveTemporal();
     const hash = await bcrypt.hash(clave, 10);
@@ -125,8 +126,8 @@ router.put('/:id', async (req, res) => {
     );
     if (existe.length === 0) return res.status(404).json({ error: 'Médico no encontrado' });
 
-    const [esp] = await conexion.query('SELECT id FROM especialidades WHERE id = ?', [datos.especialidad_id]);
-    if (esp.length === 0) return res.status(400).json({ error: 'La especialidad no existe' });
+    const [esp] = await conexion.query('SELECT id FROM especialidades WHERE id = ? AND activa = 1 AND activa = 1', [datos.especialidad_id]);
+    if (esp.length === 0) return res.status(400).json({ error: 'La especialidad no existe o está desactivada' });
 
     await conexion.beginTransaction();
     await conexion.query('UPDATE usuarios SET nombre = ?, apellido = ?, email = ?, telefono = ? WHERE id = ?', [
@@ -166,6 +167,15 @@ router.put('/:id/estado', async (req, res) => {
     const [existe] = await pool.query("SELECT id FROM usuarios WHERE id = ? AND rol = 'medico'", [id]);
     if (existe.length === 0) return res.status(404).json({ error: 'Médico no encontrado' });
 
+    if (!req.body.activo) {
+      const n = await contarTurnosFuturos(pool, { medicoId: id });
+      if (n > 0) {
+        return res.status(409).json({
+          error: `Este médico tiene ${textoTurnos(n)} reservados a partir de ahora. Cancelalos o reprogramalos antes de darlo de baja.`,
+        });
+      }
+    }
+
     await pool.query('UPDATE usuarios SET activo = ? WHERE id = ?', [req.body.activo ? 1 : 0, id]);
     res.json({ activo: req.body.activo });
   } catch (error) {
@@ -196,26 +206,5 @@ router.post('/:id/reset-clave', async (req, res) => {
   }
 });
 
-// Eliminación definitiva: no se puede si tiene turnos o recetas registrados
-router.delete('/:id', async (req, res) => {
-  const id = idValido(req.params.id);
-  if (!id) return res.status(400).json({ error: 'Médico inválido' });
-
-  try {
-    const [existe] = await pool.query("SELECT id FROM usuarios WHERE id = ? AND rol = 'medico'", [id]);
-    if (existe.length === 0) return res.status(404).json({ error: 'Médico no encontrado' });
-
-    await pool.query("DELETE FROM usuarios WHERE id = ? AND rol = 'medico'", [id]);
-    res.json({ mensaje: 'Médico eliminado' });
-  } catch (error) {
-    if (error.code === 'ER_ROW_IS_REFERENCED_2') {
-      return res.status(409).json({
-        error: 'Este médico tiene turnos o recetas registrados, así que no se puede eliminar. Dalo de baja.',
-      });
-    }
-    console.error(error);
-    res.status(500).json({ error: 'Error del servidor' });
-  }
-});
 
 module.exports = router;

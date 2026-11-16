@@ -31,7 +31,7 @@ router.get('/medicos', async (req, res) => {
     const [dias] = await pool.query(
       `SELECT DISTINCT h.medico_id, h.dia_semana
        FROM horarios h JOIN usuarios u ON u.id = h.medico_id
-       WHERE u.activo = 1 ORDER BY h.medico_id, h.dia_semana`
+       WHERE u.activo = 1 AND h.activo = 1 ORDER BY h.medico_id, h.dia_semana`
     );
 
     res.json(

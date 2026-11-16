@@ -1,6 +1,8 @@
 const express = require('express');
 const pool = require('../db');
 const { verificarToken, permitir } = require('../middleware/auth');
+const { fechaValida, diasEntre } = require('../fechas');
+const { contarTurnosFuturos, textoTurnos } = require('../turnos-futuros');
 
 const router = express.Router();
 
@@ -27,15 +29,6 @@ function aMinutos(texto) {
 const aHora = (min) => `${String(Math.floor(min / 60)).padStart(2, '0')}:${String(min % 60).padStart(2, '0')}:00`;
 const hhmm = (tiempo) => tiempo.slice(0, 5);
 
-function fechaValida(f) {
-  if (typeof f !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(f)) return false;
-  const d = new Date(`${f}T00:00:00Z`);
-  return !Number.isNaN(d.getTime()) && d.toISOString().slice(0, 10) === f;
-}
-
-const diasEntre = (desde, hasta) =>
-  Math.round((new Date(`${hasta}T00:00:00Z`) - new Date(`${desde}T00:00:00Z`)) / 86400000);
-
 // Valida un bloque horario: fin posterior al inicio y turnos completos
 function leerBloque(body) {
   const inicio = aMinutos(body.hora_inicio);
@@ -53,11 +46,11 @@ function leerBloque(body) {
   return { inicio, fin, duracion };
 }
 
-// ¿Hay otro bloque del mismo médico y día que se pise con este?
+// ¿Hay otro bloque vigente del mismo médico y día que se pise con este?
 async function buscarChoque(conexion, medicoId, dia, inicio, fin, ignorarId) {
   const [filas] = await conexion.query(
     `SELECT hora_inicio, hora_fin FROM horarios
-     WHERE medico_id = ? AND dia_semana = ? AND hora_inicio < ? AND hora_fin > ? AND id <> ?
+     WHERE medico_id = ? AND dia_semana = ? AND activo = 1 AND hora_inicio < ? AND hora_fin > ? AND id <> ?
      LIMIT 1`,
     [medicoId, dia, aHora(fin), aHora(inicio), ignorarId ?? 0]
   );
@@ -67,6 +60,9 @@ async function buscarChoque(conexion, medicoId, dia, inicio, fin, ignorarId) {
 const mensajeChoque = (dia, c) =>
   `Se pisa con otro horario del ${DIAS[dia]}: de ${hhmm(c.hora_inicio)} a ${hhmm(c.hora_fin)}`;
 
+const mensajeTurnos = (n, accion) =>
+  `Este horario tiene ${textoTurnos(n)} reservados a partir de ahora. Cancelalos o reprogramalos antes de ${accion}.`;
+
 // ---------- Horarios semanales ----------
 
 router.get('/', async (req, res) => {
@@ -75,8 +71,8 @@ router.get('/', async (req, res) => {
 
   try {
     const [filas] = await pool.query(
-      `SELECT id, dia_semana, hora_inicio, hora_fin, duracion_min
-       FROM horarios WHERE medico_id = ? ORDER BY dia_semana, hora_inicio`,
+      `SELECT id, dia_semana, hora_inicio, hora_fin, duracion_min, activo
+       FROM horarios WHERE medico_id = ? ORDER BY activo DESC, dia_semana, hora_inicio`,
       [medicoId]
     );
     res.json(
@@ -86,6 +82,7 @@ router.get('/', async (req, res) => {
         hora_inicio: hhmm(f.hora_inicio),
         hora_fin: hhmm(f.hora_fin),
         duracion_min: f.duracion_min,
+        activo: Boolean(f.activo),
         turnos: (aMinutos(f.hora_fin) - aMinutos(f.hora_inicio)) / f.duracion_min,
       }))
     );
@@ -141,7 +138,7 @@ router.post('/', async (req, res) => {
   }
 });
 
-// Edición de un bloque
+// Edición de un bloque vigente (si tiene turnos futuros, antes hay que cancelarlos)
 router.put('/:id', async (req, res) => {
   const id = entero(req.params.id);
   const dia = Number(req.body.dia_semana);
@@ -152,14 +149,26 @@ router.put('/:id', async (req, res) => {
 
   const conexion = await pool.getConnection();
   try {
-    const [previo] = await conexion.query('SELECT medico_id FROM horarios WHERE id = ?', [id]);
+    const [previo] = await conexion.query(
+      'SELECT medico_id, dia_semana, hora_inicio, hora_fin, activo FROM horarios WHERE id = ?',
+      [id]
+    );
     if (previo.length === 0) return res.status(404).json({ error: 'Horario no encontrado' });
-    const medicoId = previo[0].medico_id;
+    const p = previo[0];
+    if (!p.activo) return res.status(409).json({ error: 'Reactivá el horario para poder editarlo' });
+
+    const n = await contarTurnosFuturos(conexion, {
+      medicoId: p.medico_id,
+      dia: p.dia_semana,
+      horaInicio: p.hora_inicio,
+      horaFin: p.hora_fin,
+    });
+    if (n > 0) return res.status(409).json({ error: mensajeTurnos(n, 'cambiarlo') });
 
     await conexion.beginTransaction();
-    await conexion.query('SELECT usuario_id FROM medicos WHERE usuario_id = ? FOR UPDATE', [medicoId]);
+    await conexion.query('SELECT usuario_id FROM medicos WHERE usuario_id = ? FOR UPDATE', [p.medico_id]);
 
-    const choque = await buscarChoque(conexion, medicoId, dia, inicio, fin, id);
+    const choque = await buscarChoque(conexion, p.medico_id, dia, inicio, fin, id);
     if (choque) {
       await conexion.rollback();
       return res.status(409).json({ error: mensajeChoque(dia, choque) });
@@ -179,18 +188,51 @@ router.put('/:id', async (req, res) => {
   }
 });
 
-router.delete('/:id', async (req, res) => {
+// Desactivar y reactivar un bloque: nunca se borra
+router.put('/:id/estado', async (req, res) => {
   const id = entero(req.params.id);
   if (!id) return res.status(400).json({ error: 'Horario inválido' });
+  if (typeof req.body.activo !== 'boolean') return res.status(400).json({ error: 'Falta indicar el estado' });
 
+  const conexion = await pool.getConnection();
   try {
-    // Cuando existan los turnos (Día 8), acá se va a bloquear si hay turnos futuros
-    const [r] = await pool.query('DELETE FROM horarios WHERE id = ?', [id]);
-    if (r.affectedRows === 0) return res.status(404).json({ error: 'Horario no encontrado' });
-    res.json({ mensaje: 'Horario eliminado' });
-  } catch (error) {
-    console.error(error);
+    const [filas] = await conexion.query(
+      'SELECT medico_id, dia_semana, hora_inicio, hora_fin FROM horarios WHERE id = ?',
+      [id]
+    );
+    if (filas.length === 0) return res.status(404).json({ error: 'Horario no encontrado' });
+    const h = filas[0];
+
+    if (!req.body.activo) {
+      const n = await contarTurnosFuturos(conexion, {
+        medicoId: h.medico_id,
+        dia: h.dia_semana,
+        horaInicio: h.hora_inicio,
+        horaFin: h.hora_fin,
+      });
+      if (n > 0) return res.status(409).json({ error: mensajeTurnos(n, 'desactivarlo') });
+
+      await conexion.query('UPDATE horarios SET activo = 0 WHERE id = ?', [id]);
+      return res.json({ activo: false });
+    }
+
+    // Reactivar: no puede pisarse con otro horario vigente
+    await conexion.beginTransaction();
+    await conexion.query('SELECT usuario_id FROM medicos WHERE usuario_id = ? FOR UPDATE', [h.medico_id]);
+    const choque = await buscarChoque(conexion, h.medico_id, h.dia_semana, aMinutos(h.hora_inicio), aMinutos(h.hora_fin), id);
+    if (choque) {
+      await conexion.rollback();
+      return res.status(409).json({ error: mensajeChoque(h.dia_semana, choque) });
+    }
+    await conexion.query('UPDATE horarios SET activo = 1 WHERE id = ?', [id]);
+    await conexion.commit();
+    res.json({ activo: true });
+  } catch (err) {
+    await conexion.rollback();
+    console.error(err);
     res.status(500).json({ error: 'Error del servidor' });
+  } finally {
+    conexion.release();
   }
 });
 
@@ -202,10 +244,10 @@ router.get('/licencias', async (req, res) => {
 
   try {
     const [filas] = await pool.query(
-      'SELECT id, desde, hasta, motivo FROM licencias WHERE medico_id = ? ORDER BY desde DESC LIMIT 100',
+      'SELECT id, desde, hasta, motivo, activa FROM licencias WHERE medico_id = ? ORDER BY desde DESC LIMIT 100',
       [medicoId]
     );
-    res.json(filas);
+    res.json(filas.map((f) => ({ ...f, activa: Boolean(f.activa) })));
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Error del servidor' });
@@ -228,10 +270,17 @@ router.post('/licencias', async (req, res) => {
     if (medico.length === 0) return res.status(404).json({ error: 'Médico no encontrado' });
 
     const [choque] = await pool.query(
-      'SELECT id FROM licencias WHERE medico_id = ? AND desde <= ? AND hasta >= ? LIMIT 1',
+      'SELECT id FROM licencias WHERE medico_id = ? AND activa = 1 AND desde <= ? AND hasta >= ? LIMIT 1',
       [medicoId, hasta, desde]
     );
-    if (choque.length > 0) return res.status(409).json({ error: 'Ya hay una licencia cargada en esas fechas' });
+    if (choque.length > 0) return res.status(409).json({ error: 'Ya hay una licencia vigente en esas fechas' });
+
+    const n = await contarTurnosFuturos(pool, { medicoId, desde, hasta });
+    if (n > 0) {
+      return res.status(409).json({
+        error: `Hay ${textoTurnos(n)} reservados en esas fechas. Cancelalos o reprogramalos antes de cargar la licencia.`,
+      });
+    }
 
     await pool.query('INSERT INTO licencias (medico_id, desde, hasta, motivo) VALUES (?, ?, ?, ?)', [
       medicoId,
@@ -246,14 +295,34 @@ router.post('/licencias', async (req, res) => {
   }
 });
 
-router.delete('/licencias/:id', async (req, res) => {
+// Cancelar y reactivar una licencia: queda guardada
+router.put('/licencias/:id/estado', async (req, res) => {
   const id = entero(req.params.id);
   if (!id) return res.status(400).json({ error: 'Licencia inválida' });
+  if (typeof req.body.activa !== 'boolean') return res.status(400).json({ error: 'Falta indicar el estado' });
 
   try {
-    const [r] = await pool.query('DELETE FROM licencias WHERE id = ?', [id]);
-    if (r.affectedRows === 0) return res.status(404).json({ error: 'Licencia no encontrada' });
-    res.json({ mensaje: 'Licencia eliminada' });
+    const [filas] = await pool.query('SELECT medico_id, desde, hasta FROM licencias WHERE id = ?', [id]);
+    if (filas.length === 0) return res.status(404).json({ error: 'Licencia no encontrada' });
+    const l = filas[0];
+
+    if (req.body.activa) {
+      const [choque] = await pool.query(
+        'SELECT id FROM licencias WHERE medico_id = ? AND activa = 1 AND desde <= ? AND hasta >= ? AND id <> ? LIMIT 1',
+        [l.medico_id, l.hasta, l.desde, id]
+      );
+      if (choque.length > 0) return res.status(409).json({ error: 'Se pisa con otra licencia vigente de ese médico' });
+
+      const n = await contarTurnosFuturos(pool, { medicoId: l.medico_id, desde: l.desde, hasta: l.hasta });
+      if (n > 0) {
+        return res.status(409).json({
+          error: `Hay ${textoTurnos(n)} reservados en esas fechas. Cancelalos o reprogramalos antes de reactivar la licencia.`,
+        });
+      }
+    }
+
+    await pool.query('UPDATE licencias SET activa = ? WHERE id = ?', [req.body.activa ? 1 : 0, id]);
+    res.json({ activa: req.body.activa });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Error del servidor' });
@@ -265,11 +334,11 @@ router.delete('/licencias/:id', async (req, res) => {
 router.get('/feriados', async (req, res) => {
   try {
     const [filas] = await pool.query(
-      `SELECT id, fecha, descripcion FROM feriados
+      `SELECT id, fecha, descripcion, activo FROM feriados
        WHERE fecha >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
        ORDER BY fecha LIMIT 200`
     );
-    res.json(filas);
+    res.json(filas.map((f) => ({ ...f, activo: Boolean(f.activo) })));
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Error del servidor' });
@@ -286,25 +355,45 @@ router.post('/feriados', async (req, res) => {
   }
 
   try {
+    const n = await contarTurnosFuturos(pool, { desde: fecha, hasta: fecha });
+    if (n > 0) {
+      return res.status(409).json({
+        error: `Hay ${textoTurnos(n)} reservados ese día. Cancelalos o reprogramalos antes de cargar el feriado.`,
+      });
+    }
+
     await pool.query('INSERT INTO feriados (fecha, descripcion) VALUES (?, ?)', [fecha, descripcion]);
     res.status(201).json({ mensaje: 'Feriado cargado' });
   } catch (error) {
     if (error.code === 'ER_DUP_ENTRY') {
-      return res.status(409).json({ error: 'Esa fecha ya está cargada' });
+      return res.status(409).json({ error: 'Esa fecha ya está cargada. Si está desactivada, reactivala desde la lista.' });
     }
     console.error(error);
     res.status(500).json({ error: 'Error del servidor' });
   }
 });
 
-router.delete('/feriados/:id', async (req, res) => {
+// Desactivar y reactivar un feriado: queda guardado
+router.put('/feriados/:id/estado', async (req, res) => {
   const id = entero(req.params.id);
   if (!id) return res.status(400).json({ error: 'Feriado inválido' });
+  if (typeof req.body.activo !== 'boolean') return res.status(400).json({ error: 'Falta indicar el estado' });
 
   try {
-    const [r] = await pool.query('DELETE FROM feriados WHERE id = ?', [id]);
-    if (r.affectedRows === 0) return res.status(404).json({ error: 'Feriado no encontrado' });
-    res.json({ mensaje: 'Feriado eliminado' });
+    const [filas] = await pool.query('SELECT fecha FROM feriados WHERE id = ?', [id]);
+    if (filas.length === 0) return res.status(404).json({ error: 'Feriado no encontrado' });
+
+    if (req.body.activo) {
+      const n = await contarTurnosFuturos(pool, { desde: filas[0].fecha, hasta: filas[0].fecha });
+      if (n > 0) {
+        return res.status(409).json({
+          error: `Hay ${textoTurnos(n)} reservados ese día. Cancelalos o reprogramalos antes de reactivar el feriado.`,
+        });
+      }
+    }
+
+    await pool.query('UPDATE feriados SET activo = ? WHERE id = ?', [req.body.activo ? 1 : 0, id]);
+    res.json({ activo: req.body.activo });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Error del servidor' });

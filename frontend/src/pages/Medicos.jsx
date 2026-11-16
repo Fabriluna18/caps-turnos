@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { KeyRound, Pencil, Trash2, UserCheck, UserX } from 'lucide-react';
+import { KeyRound, Pencil, UserCheck, UserX } from 'lucide-react';
 import { apiFetch } from '../api/client';
 import { mensajeDeError } from '../api/errores';
 import Especialidades from '../components/Especialidades';
@@ -110,19 +110,6 @@ export default function Medicos() {
     }
   };
 
-  const eliminar = async (m) => {
-    if (!window.confirm(`¿Eliminar a ${m.nombre} ${m.apellido}? Esta acción no se puede deshacer.`)) return;
-    limpiarMensajes();
-    try {
-      await apiFetch(`/medicos/${m.id}`, { method: 'DELETE' });
-      setOk(`${m.nombre} ${m.apellido} fue eliminado`);
-      if (editando === m.id) cancelarEdicion();
-      await recargar();
-    } catch (err) {
-      setError(mensajeDeError(err));
-    }
-  };
-
   const copiar = async () => {
     try {
       await navigator.clipboard.writeText(clave.valor);
@@ -180,7 +167,7 @@ export default function Medicos() {
               Especialidad
               <select name="especialidad_id" value={form.especialidad_id} onChange={cambiar} required>
                 <option value="">Elegí una...</option>
-                {especialidades.map((esp) => (
+                {especialidades.filter((esp) => esp.activa).map((esp) => (
                   <option key={esp.id} value={esp.id}>{esp.nombre}</option>
                 ))}
               </select>
@@ -230,7 +217,6 @@ export default function Medicos() {
                           {m.activo ? <><UserX size={14} /> Dar de baja</> : <><UserCheck size={14} /> Reactivar</>}
                         </button>
                         <button className="boton-chico" onClick={() => nuevaClave(m)}><KeyRound size={14} /> Nueva clave</button>
-                        <button className="boton-chico peligro" onClick={() => eliminar(m)}><Trash2 size={14} /> Eliminar</button>
                       </div>
                     </td>
                   </tr>
