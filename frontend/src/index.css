@@ -170,3 +170,45 @@ body {
 .datos div { display: flex; flex-direction: column; }
 .datos dt { font-size: 0.8rem; font-weight: 600; color: var(--color-texto-suave); }
 .datos dd { margin: 2px 0 0; }
+
+/* ===== Día 7: disponibilidad ===== */
+:root {
+  --color-libre-fondo: #dcfce7;
+}
+
+.dos-columnas { display: grid; grid-template-columns: minmax(300px, 440px) minmax(0, 1fr); gap: 20px; align-items: start; }
+.dos-columnas .panel { margin-bottom: 0; }
+
+.cal-cab { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+.cal-cab h2 { margin: 0; font-size: 1.1rem; }
+.cal-nav { display: flex; gap: 6px; }
+.cal-nav button { display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; border: 0; border-radius: 8px; background: #e8ecf8; color: var(--color-primario); cursor: pointer; transition: background-color 160ms ease, transform 160ms var(--ease-out); }
+.cal-nav button:hover:not(:disabled) { background: #dbe3fb; }
+.cal-nav button:active:not(:disabled) { transform: scale(0.95); }
+.cal-nav button:disabled { opacity: 0.4; cursor: default; }
+
+.cal-grilla { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
+.cal-semana { text-align: center; font-size: 0.75rem; font-weight: 600; color: var(--color-texto-suave); padding: 4px 0; }
+.cal-dia { min-height: 46px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; border: 2px solid transparent; border-radius: 10px; background: #f8fafc; color: var(--color-texto-suave); font: inherit; cursor: pointer; transition: background-color 160ms ease, transform 160ms var(--ease-out); }
+.cal-dia:hover:not(:disabled) { background: #eef2ff; }
+.cal-dia:active:not(:disabled) { transform: scale(0.96); }
+.cal-dia:disabled { opacity: 0.45; cursor: default; }
+.cal-dia.con { background: var(--color-libre-fondo); color: var(--color-ok); font-weight: 700; }
+.cal-dia.hoy { border-color: var(--color-primario); }
+.cal-dia.elegido { background: var(--color-primario); color: white; }
+.cal-dia .cantidad { font-size: 0.65rem; font-weight: 600; opacity: 0.85; }
+
+.leyenda { margin: 12px 0 0; font-size: 0.8rem; color: var(--color-texto-suave); }
+.aviso-dia { padding: 12px 14px; border-radius: var(--radio); background: var(--color-aviso-fondo); border: 1px solid var(--color-aviso-borde); }
+
+.horas { display: flex; flex-wrap: wrap; gap: 8px; }
+.hora { padding: 8px 14px; border: 0; border-radius: 999px; font: inherit; font-weight: 600; font-variant-numeric: tabular-nums; }
+.hora.libre { background: var(--color-libre-fondo); color: var(--color-ok); }
+button.hora.libre { cursor: pointer; transition: transform 160ms var(--ease-out), background-color 160ms ease; }
+button.hora.libre:hover { background: #bbf7d0; }
+button.hora.libre:active { transform: scale(0.96); }
+.hora.ocupada { background: #f1f5f9; color: #94a3b8; text-decoration: line-through; }
+
+@media (max-width: 900px) {
+ .dos-columnas { grid-template-columns: 1fr; }
+}

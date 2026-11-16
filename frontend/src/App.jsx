@@ -11,12 +11,15 @@ import Proximamente from './pages/Proximamente';
 import Restablecer from './pages/Restablecer';
 import Horarios from './pages/Horarios';
 import Pacientes from './pages/Pacientes';
+import Turnos from './pages/Turnos';
+
 
 // Pantallas ya armadas: 'rol/ruta' -> componente
 const PAGINAS = {
   'secretaria/medicos': Medicos,
   'secretaria/horarios': Horarios,
   'secretaria/pacientes': Pacientes,
+  'secretaria/turnos': Turnos,
 };
 
 export default function App() {

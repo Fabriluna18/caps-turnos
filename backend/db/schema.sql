@@ -90,3 +90,27 @@ CREATE TABLE IF NOT EXISTS feriados (
   descripcion VARCHAR(100) NOT NULL,
   UNIQUE KEY uq_feriados_fecha (fecha)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Día 7: turnos (las reservas se arman el Día 8)
+CREATE TABLE IF NOT EXISTS turnos (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  medico_id INT UNSIGNED NOT NULL,
+  paciente_id INT UNSIGNED NOT NULL,
+  fecha DATE NOT NULL,
+  hora TIME NOT NULL,
+  duracion_min SMALLINT UNSIGNED NOT NULL,
+  estado ENUM('pendiente', 'confirmado', 'en_atencion', 'atendido', 'cancelado', 'ausente') NOT NULL DEFAULT 'pendiente',
+  motivo VARCHAR(150) NULL,
+  creado_por INT UNSIGNED NULL,
+  creado_en TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  cancelado_en DATETIME NULL,
+  -- Vale 1 mientras el turno ocupa el horario y NULL si se canceló: así la cancelación lo libera
+  slot_ocupado TINYINT AS (IF(estado = 'cancelado', NULL, 1)) PERSISTENT,
+  UNIQUE KEY uq_turnos_slot (medico_id, fecha, hora, slot_ocupado),
+  KEY idx_turnos_paciente (paciente_id, fecha),
+  KEY idx_turnos_medico_fecha (medico_id, fecha),
+  CONSTRAINT fk_turnos_medico FOREIGN KEY (medico_id) REFERENCES medicos (usuario_id) ON DELETE RESTRICT,
+  CONSTRAINT fk_turnos_paciente FOREIGN KEY (paciente_id) REFERENCES pacientes (usuario_id) ON DELETE RESTRICT,
+  CONSTRAINT fk_turnos_creado_por FOREIGN KEY (creado_por) REFERENCES usuarios (id) ON DELETE SET NULL,
+  CONSTRAINT chk_turnos_duracion CHECK (duracion_min > 0)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
