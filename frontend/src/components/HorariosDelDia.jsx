@@ -3,8 +3,8 @@ import { apiFetch } from '../api/client';
 import { mensajeDeError } from '../api/errores';
 import { diaDeSemana, formatoFecha } from '../fechas';
 
-// Si se pasa onElegirHora, los turnos libres son botones (el Día 8 lo usa para reservar)
-export default function HorariosDelDia({ medicoId, fecha, onElegirHora, version = 0 }) {
+// Si se pasa onElegirHora, los turnos libres son botones (así se reserva o se reprograma)
+export default function HorariosDelDia({ medicoId, fecha, onElegirHora, horaElegida = null, version = 0 }) {
   const [resp, setResp] = useState(null);
   const [error, setError] = useState('');
   const clave = fecha ? `${medicoId}|${fecha}|${version}` : '';
@@ -51,7 +51,11 @@ export default function HorariosDelDia({ medicoId, fecha, onElegirHora, version 
           <div className="horas">
             {resp.turnos.map((t) =>
               t.libre && onElegirHora ? (
-                <button key={t.hora} type="button" className="hora libre" onClick={() => onElegirHora(t)}>
+                <button
+                  key={t.hora} type="button"
+                  className={`hora libre${t.hora === horaElegida ? ' elegida' : ''}`}
+                  onClick={() => onElegirHora(t)}
+                >
                   {t.hora}
                 </button>
               ) : (

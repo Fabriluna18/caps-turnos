@@ -70,9 +70,10 @@ router.get('/', async (req, res) => {
   if (!medicoId) return res.status(400).json({ error: 'Médico inválido' });
 
   try {
+    // Los eliminados no se muestran (siguen guardados en la base)
     const [filas] = await pool.query(
       `SELECT id, dia_semana, hora_inicio, hora_fin, duracion_min, activo
-       FROM horarios WHERE medico_id = ? ORDER BY activo DESC, dia_semana, hora_inicio`,
+       FROM horarios WHERE medico_id = ? AND eliminado = 0 ORDER BY activo DESC, dia_semana, hora_inicio`,
       [medicoId]
     );
     res.json(
@@ -150,7 +151,7 @@ router.put('/:id', async (req, res) => {
   const conexion = await pool.getConnection();
   try {
     const [previo] = await conexion.query(
-      'SELECT medico_id, dia_semana, hora_inicio, hora_fin, activo FROM horarios WHERE id = ?',
+      'SELECT medico_id, dia_semana, hora_inicio, hora_fin, activo FROM horarios WHERE id = ? AND eliminado = 0',
       [id]
     );
     if (previo.length === 0) return res.status(404).json({ error: 'Horario no encontrado' });
@@ -188,7 +189,7 @@ router.put('/:id', async (req, res) => {
   }
 });
 
-// Desactivar y reactivar un bloque: nunca se borra
+// Desactivar y reactivar un bloque (sigue apareciendo en la lista)
 router.put('/:id/estado', async (req, res) => {
   const id = entero(req.params.id);
   if (!id) return res.status(400).json({ error: 'Horario inválido' });
@@ -197,7 +198,7 @@ router.put('/:id/estado', async (req, res) => {
   const conexion = await pool.getConnection();
   try {
     const [filas] = await conexion.query(
-      'SELECT medico_id, dia_semana, hora_inicio, hora_fin FROM horarios WHERE id = ?',
+      'SELECT medico_id, dia_semana, hora_inicio, hora_fin FROM horarios WHERE id = ? AND eliminado = 0',
       [id]
     );
     if (filas.length === 0) return res.status(404).json({ error: 'Horario no encontrado' });
@@ -233,6 +234,36 @@ router.put('/:id/estado', async (req, res) => {
     res.status(500).json({ error: 'Error del servidor' });
   } finally {
     conexion.release();
+  }
+});
+
+// "Eliminar" un horario: sale de la lista y deja de dar turnos, pero la fila queda guardada
+// en la base (marcada como eliminada). Los turnos ya dados conservan su propia fecha y hora.
+router.delete('/:id', async (req, res) => {
+  const id = entero(req.params.id);
+  if (!id) return res.status(400).json({ error: 'Horario inválido' });
+
+  try {
+    const [filas] = await pool.query(
+      'SELECT medico_id, dia_semana, hora_inicio, hora_fin FROM horarios WHERE id = ? AND eliminado = 0',
+      [id]
+    );
+    if (filas.length === 0) return res.status(404).json({ error: 'Horario no encontrado' });
+    const h = filas[0];
+
+    const n = await contarTurnosFuturos(pool, {
+      medicoId: h.medico_id,
+      dia: h.dia_semana,
+      horaInicio: h.hora_inicio,
+      horaFin: h.hora_fin,
+    });
+    if (n > 0) return res.status(409).json({ error: mensajeTurnos(n, 'eliminarlo') });
+
+    await pool.query('UPDATE horarios SET activo = 0, eliminado = 1 WHERE id = ?', [id]);
+    res.json({ mensaje: 'Horario eliminado de la lista' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Error del servidor' });
   }
 });
 
@@ -367,6 +398,44 @@ router.post('/feriados', async (req, res) => {
   } catch (error) {
     if (error.code === 'ER_DUP_ENTRY') {
       return res.status(409).json({ error: 'Esa fecha ya está cargada. Si está desactivada, reactivala desde la lista.' });
+    }
+    console.error(error);
+    res.status(500).json({ error: 'Error del servidor' });
+  }
+});
+
+// Corregir la fecha o la descripción de un feriado (por ejemplo, un error de tipeo)
+router.put('/feriados/:id', async (req, res) => {
+  const id = entero(req.params.id);
+  const { fecha } = req.body;
+  const descripcion = typeof req.body.descripcion === 'string' ? req.body.descripcion.trim() : '';
+
+  if (!id) return res.status(400).json({ error: 'Feriado inválido' });
+  if (!fechaValida(fecha)) return res.status(400).json({ error: 'Ingresá una fecha válida' });
+  if (descripcion.length < 2 || descripcion.length > 100) {
+    return res.status(400).json({ error: 'Escribí una descripción (entre 2 y 100 letras)' });
+  }
+
+  try {
+    const [filas] = await pool.query('SELECT fecha, activo FROM feriados WHERE id = ?', [id]);
+    if (filas.length === 0) return res.status(404).json({ error: 'Feriado no encontrado' });
+    const actual = filas[0];
+
+    // Si está vigente y cambia de fecha, la fecha nueva no puede tener turnos reservados
+    if (actual.activo && actual.fecha !== fecha) {
+      const n = await contarTurnosFuturos(pool, { desde: fecha, hasta: fecha });
+      if (n > 0) {
+        return res.status(409).json({
+          error: `Hay ${textoTurnos(n)} reservados el día nuevo. Cancelalos o reprogramalos antes de moverle el feriado.`,
+        });
+      }
+    }
+
+    await pool.query('UPDATE feriados SET fecha = ?, descripcion = ? WHERE id = ?', [fecha, descripcion, id]);
+    res.json({ mensaje: 'Feriado actualizado' });
+  } catch (error) {
+    if (error.code === 'ER_DUP_ENTRY') {
+      return res.status(409).json({ error: 'Ya hay otro feriado cargado en esa fecha' });
     }
     console.error(error);
     res.status(500).json({ error: 'Error del servidor' });

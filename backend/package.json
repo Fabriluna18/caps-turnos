@@ -9,7 +9,8 @@
     "demo": "node scripts/crear-demo.js",
     "demo:pacientes": "node scripts/crear-pacientes-demo.js",
     "demo:medicos": "node scripts/crear-medicos-demo.js",
-    "test": "node --test"
+    "test": "node --test",
+    "probar:doble-reserva": "node scripts/probar-doble-reserva.js"
   },
   "keywords": [],
   "author": "",

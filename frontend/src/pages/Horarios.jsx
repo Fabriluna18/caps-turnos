@@ -1,22 +1,23 @@
 import { useEffect, useState } from 'react';
 import { apiFetch } from '../api/client';
 import { mensajeDeError } from '../api/errores';
+import BuscadorMedico from '../components/BuscadorMedico';
 import Feriados from '../components/Feriados';
 import HorariosSemanales from '../components/HorariosSemanales';
 import Licencias from '../components/Licencias';
 
 export default function Horarios() {
   const [medicos, setMedicos] = useState([]);
+  const [especialidades, setEspecialidades] = useState([]);
   const [cargado, setCargado] = useState(false);
-  const [medicoId, setMedicoId] = useState('');
+  const [medico, setMedico] = useState(null);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    apiFetch('/medicos')
-      .then((lista) => {
-        setMedicos(lista);
-        const primero = lista.find((m) => m.activo) || lista[0];
-        if (primero) setMedicoId(String(primero.id));
+    Promise.all([apiFetch('/medicos'), apiFetch('/especialidades')])
+      .then(([m, e]) => {
+        setMedicos(m);
+        setEspecialidades(e.filter((x) => x.activa));
       })
       .catch((err) => setError(mensajeDeError(err)))
       .finally(() => setCargado(true));
@@ -32,24 +33,26 @@ export default function Horarios() {
       )}
 
       {medicos.length > 0 && (
-        <>
-          <label className="campo selector-medico">
-            Médico
-            <select value={medicoId} onChange={(e) => setMedicoId(e.target.value)}>
-              {medicos.map((m) => (
-                <option key={m.id} value={m.id}>
-                  {m.apellido}, {m.nombre} - {m.especialidad}{m.activo ? '' : ' (de baja)'}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          {medicoId && (
-            <>
-              <HorariosSemanales key={`h-${medicoId}`} medicoId={medicoId} />
-              <Licencias key={`l-${medicoId}`} medicoId={medicoId} />
-            </>
+        <div className="panel">
+          <h2>Médico</h2>
+          {medico ? (
+            <div className="seleccion">
+              <div>
+                <strong>{medico.apellido}, {medico.nombre}</strong>
+                <div className="suave">{medico.especialidad}{medico.activo ? '' : ' · De baja'}</div>
+              </div>
+              <button className="boton-chico" onClick={() => setMedico(null)}>Cambiar médico</button>
+            </div>
+          ) : (
+            <BuscadorMedico medicos={medicos} especialidades={especialidades} onElegir={setMedico} />
           )}
+        </div>
+      )}
+
+      {medico && (
+        <>
+          <HorariosSemanales key={`h-${medico.id}`} medicoId={medico.id} />
+          <Licencias key={`l-${medico.id}`} medicoId={medico.id} />
         </>
       )}
 

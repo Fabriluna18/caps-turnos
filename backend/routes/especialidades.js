@@ -11,7 +11,15 @@ function idValido(valor) {
   return Number.isInteger(n) && n > 0 ? n : null;
 }
 
-// "medicos" cuenta solo a los médicos activos
+function leerNombre(body) {
+  const nombre = typeof body.nombre === 'string' ? body.nombre.trim() : '';
+  if (nombre.length < 2 || nombre.length > 60) {
+    return { error: 'El nombre de la especialidad debe tener entre 2 y 60 letras' };
+  }
+  return { nombre };
+}
+
+// "medicos" cuenta solo a los médicos activos. El paciente ve solo las especialidades activas.
 router.get('/', async (req, res) => {
   const soloActivas = req.usuario.rol !== 'secretaria';
   try {
@@ -32,24 +40,44 @@ router.get('/', async (req, res) => {
 });
 
 router.post('/', permitir('secretaria'), async (req, res) => {
-  const nombre = typeof req.body.nombre === 'string' ? req.body.nombre.trim() : '';
-  if (nombre.length < 2 || nombre.length > 60) {
-    return res.status(400).json({ error: 'El nombre de la especialidad debe tener entre 2 y 60 letras' });
-  }
+  const { nombre, error } = leerNombre(req.body);
+  if (error) return res.status(400).json({ error });
 
   try {
     const [r] = await pool.query('INSERT INTO especialidades (nombre) VALUES (?)', [nombre]);
     res.status(201).json({ id: r.insertId, nombre, activa: true, medicos: 0 });
-  } catch (error) {
-    if (error.code === 'ER_DUP_ENTRY') {
+  } catch (err) {
+    if (err.code === 'ER_DUP_ENTRY') {
       return res.status(409).json({ error: 'Esa especialidad ya existe. Si está desactivada, reactivala desde la lista.' });
     }
-    console.error(error);
+    console.error(err);
     res.status(500).json({ error: 'Error del servidor' });
   }
 });
 
-// Desactivar y reactivar: nunca se borra
+// Corregir el nombre (por ejemplo, un error de tipeo)
+router.put('/:id', permitir('secretaria'), async (req, res) => {
+  const id = idValido(req.params.id);
+  if (!id) return res.status(400).json({ error: 'Especialidad inválida' });
+  const { nombre, error } = leerNombre(req.body);
+  if (error) return res.status(400).json({ error });
+
+  try {
+    const [existe] = await pool.query('SELECT id FROM especialidades WHERE id = ?', [id]);
+    if (existe.length === 0) return res.status(404).json({ error: 'Especialidad no encontrada' });
+
+    await pool.query('UPDATE especialidades SET nombre = ? WHERE id = ?', [nombre, id]);
+    res.json({ id, nombre });
+  } catch (err) {
+    if (err.code === 'ER_DUP_ENTRY') {
+      return res.status(409).json({ error: 'Ya existe otra especialidad con ese nombre' });
+    }
+    console.error(err);
+    res.status(500).json({ error: 'Error del servidor' });
+  }
+});
+
+// Desactivar y reactivar
 router.put('/:id/estado', permitir('secretaria'), async (req, res) => {
   const id = idValido(req.params.id);
   if (!id) return res.status(400).json({ error: 'Especialidad inválida' });
@@ -75,6 +103,26 @@ router.put('/:id/estado', permitir('secretaria'), async (req, res) => {
     await pool.query('UPDATE especialidades SET activa = ? WHERE id = ?', [req.body.activa ? 1 : 0, id]);
     res.json({ activa: req.body.activa });
   } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Error del servidor' });
+  }
+});
+
+// Borrar: solo si ningún médico la usó nunca (ni siquiera uno dado de baja)
+router.delete('/:id', permitir('secretaria'), async (req, res) => {
+  const id = idValido(req.params.id);
+  if (!id) return res.status(400).json({ error: 'Especialidad inválida' });
+
+  try {
+    const [r] = await pool.query('DELETE FROM especialidades WHERE id = ?', [id]);
+    if (r.affectedRows === 0) return res.status(404).json({ error: 'Especialidad no encontrada' });
+    res.json({ mensaje: 'Especialidad eliminada' });
+  } catch (error) {
+    if (error.code === 'ER_ROW_IS_REFERENCED_2') {
+      return res.status(409).json({
+        error: 'Hay médicos asociados a esa especialidad (aunque estén de baja), así que no se puede borrar. Podés corregirle el nombre o desactivarla.',
+      });
+    }
     console.error(error);
     res.status(500).json({ error: 'Error del servidor' });
   }

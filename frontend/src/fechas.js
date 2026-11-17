@@ -21,3 +21,10 @@ export function edad(iso) {
   if (hoy.getMonth() + 1 < m || (hoy.getMonth() + 1 === m && hoy.getDate() < d)) anios -= 1;
   return anios;
 }
+
+// Suma (o resta) días a una fecha AAAA-MM-DD
+export function sumarDias(iso, dias) {
+  const d = new Date(`${iso}T00:00:00`);
+  d.setDate(d.getDate() + dias);
+  return d.toLocaleDateString('en-CA');
+}

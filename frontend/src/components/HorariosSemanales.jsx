@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Ban, Pencil, RotateCcw } from 'lucide-react';
+import { Ban, Pencil, RotateCcw, Trash2 } from 'lucide-react';
 import { apiFetch } from '../api/client';
 import { mensajeDeError } from '../api/errores';
 
@@ -97,6 +97,22 @@ export default function HorariosSemanales({ medicoId }) {
     }
   };
 
+  const eliminar = async (h) => {
+    const dia = DIAS[h.dia_semana - 1].toLowerCase();
+    if (!window.confirm(`¿Eliminar el horario del ${dia} de ${h.hora_inicio} a ${h.hora_fin}? Sale de la lista y deja de dar turnos, pero queda guardado en la base como historial.`)) return;
+    setError('');
+    setOk('');
+    try {
+      await apiFetch(`/horarios/${h.id}`, { method: 'DELETE' });
+      if (editando === h.id) terminarEdicion();
+      setOk('Horario eliminado de la lista (queda guardado en el historial)');
+      await recargar();
+    } catch (err) {
+      setError(mensajeDeError(err));
+    }
+  };
+
+
   const total = horarios.filter((h) => h.activo).reduce((suma, h) => suma + h.turnos, 0);
 
   return (
@@ -192,6 +208,9 @@ export default function HorariosSemanales({ medicoId }) {
                         )}
                         <button className="boton-chico" onClick={() => cambiarEstado(h)}>
                           {h.activo ? <><Ban size={14} /> Desactivar</> : <><RotateCcw size={14} /> Reactivar</>}
+                        </button>
+                        <button className="boton-chico peligro" onClick={() => eliminar(h)}>
+                          <Trash2 size={14} /> Eliminar
                         </button>
                       </div>
                     </td>

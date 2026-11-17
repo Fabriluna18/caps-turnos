@@ -120,3 +120,6 @@ ALTER TABLE especialidades ADD COLUMN IF NOT EXISTS activa TINYINT(1) NOT NULL D
 ALTER TABLE horarios ADD COLUMN IF NOT EXISTS activo TINYINT(1) NOT NULL DEFAULT 1;
 ALTER TABLE licencias ADD COLUMN IF NOT EXISTS activa TINYINT(1) NOT NULL DEFAULT 1;
 ALTER TABLE feriados ADD COLUMN IF NOT EXISTS activo TINYINT(1) NOT NULL DEFAULT 1;
+
+-- Día 8 (parte 2): los horarios eliminados quedan guardados, solo se ocultan de la lista
+ALTER TABLE horarios ADD COLUMN IF NOT EXISTS eliminado TINYINT(1) NOT NULL DEFAULT 0;
