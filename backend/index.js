@@ -12,6 +12,7 @@ const turnoRoutes = require('./routes/turnos');
 const portalPacienteRoutes = require('./routes/paciente');
 const pacienteTurnosRoutes = require('./routes/paciente-turnos');
 const confirmarRoutes = require('./routes/confirmar');
+const medicoPortalRoutes = require('./routes/medico');
 const perfilRoutes = require('./routes/perfil');
 const { iniciarRecordatorios } = require('./recordatorios');
 
@@ -43,6 +44,7 @@ app.use('/api/turnos', turnoRoutes);
 app.use('/api/paciente/turnos', pacienteTurnosRoutes);
 app.use('/api/paciente', portalPacienteRoutes);
 app.use('/api/confirmar', confirmarRoutes);
+app.use('/api/medico', medicoPortalRoutes);
 app.use('/api/perfil', perfilRoutes);
 
 // Ruta de prueba de la conexión (la sacamos antes de publicar)

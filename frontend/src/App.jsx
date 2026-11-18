@@ -2,6 +2,7 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import Layout from './components/Layout';
 import RutaProtegida from './components/RutaProtegida';
 import { MENUS } from './menus';
+import AgendaMedico from './pages/AgendaMedico';
 import CambiarClave from './pages/CambiarClave';
 import Confirmar from './pages/Confirmar';
 import Horarios from './pages/Horarios';
@@ -26,6 +27,7 @@ const PAGINAS = {
   'secretaria/pacientes': Pacientes,
   'secretaria/turnos': Turnos,
   'secretaria/perfil': Perfil,
+  'medico/agenda': AgendaMedico,
   'medico/perfil': Perfil,
   'paciente/medicos': MedicosPaciente,
   'paciente/sacar-turno': SacarTurnoPaciente,
