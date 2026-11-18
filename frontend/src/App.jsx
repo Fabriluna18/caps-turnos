@@ -9,6 +9,7 @@ import Inicio from './pages/Inicio';
 import InicioPaciente from './pages/InicioPaciente';
 import Login from './pages/Login';
 import Medicos from './pages/Medicos';
+import MisTurnos from './pages/MisTurnos';
 import MedicosPaciente from './pages/MedicosPaciente';
 import Olvide from './pages/Olvide';
 import Pacientes from './pages/Pacientes';
@@ -28,6 +29,7 @@ const PAGINAS = {
   'medico/perfil': Perfil,
   'paciente/medicos': MedicosPaciente,
   'paciente/sacar-turno': SacarTurnoPaciente,
+  'paciente/mis-turnos': MisTurnos,
   'paciente/perfil': Perfil,
 };
 

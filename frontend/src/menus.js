@@ -24,7 +24,7 @@ export const MENUS = {
     { a: '', texto: 'Inicio', icono: LayoutDashboard },
     { a: 'medicos', texto: 'Médicos', icono: Stethoscope },
     { a: 'sacar-turno', texto: 'Sacar turno', icono: CalendarPlus },
-    { a: 'mis-turnos', texto: 'Mis turnos', icono: CalendarDays, dia: 11 },
+    { a: 'mis-turnos', texto: 'Mis turnos', icono: CalendarDays },
     { a: 'mis-recetas', texto: 'Mis recetas', icono: FileText, dia: 13 },
     { a: 'perfil', texto: 'Mi perfil', icono: UserCircle },
   ],

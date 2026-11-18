@@ -2,7 +2,7 @@ const express = require('express');
 const pool = require('../db');
 const { verificarToken, permitir } = require('../middleware/auth');
 const { ahora } = require('../fechas');
-const { reservarTurno } = require('../reservas');
+const { reservarTurno, esFuturo } = require('../reservas');
 
 const router = express.Router();
 
@@ -77,5 +77,89 @@ router.post('/', async (req, res) => {
     conexion.release();
   }
 });
+
+const POR_PAGINA = 10;
+const SELECT = `
+  SELECT t.id, t.fecha, t.hora, t.estado, t.motivo, um.nombre, um.apellido, e.nombre AS especialidad
+  FROM turnos t
+  JOIN usuarios um ON um.id = t.medico_id
+  JOIN medicos m ON m.usuario_id = t.medico_id
+  JOIN especialidades e ON e.id = m.especialidad_id`;
+
+const aTurno = (t) => ({
+  id: t.id,
+  fecha: t.fecha,
+  hora: t.hora.slice(0, 5),
+  estado: t.estado,
+  motivo: t.motivo,
+  medico: { nombre: t.nombre, apellido: t.apellido, especialidad: t.especialidad },
+  // se puede confirmar o cancelar solo si está vigente y todavía no empezó
+  modificable: ['pendiente', 'confirmado'].includes(t.estado) && esFuturo(t.fecha, t.hora),
+});
+
+// Mis turnos: ?tab=proximos | historial | cancelados
+router.get('/', async (req, res) => {
+  const tab = ['proximos', 'historial', 'cancelados'].includes(req.query.tab) ? req.query.tab : 'proximos';
+  const pagina = Math.max(1, Number.parseInt(req.query.pagina, 10) || 1);
+  const a = ahora();
+  const horaAhora = `${String(Math.floor(a.minutos / 60)).padStart(2, '0')}:${String(a.minutos % 60).padStart(2, '0')}:00`;
+
+  // "próximo" = vigente (pendiente, confirmado o en atención) y que no empezó antes de ahora
+  const proximo = "t.estado IN ('pendiente','confirmado','en_atencion') AND (t.fecha > ? OR (t.fecha = ? AND t.hora > ?))";
+  const filtros = {
+    proximos: { donde: proximo, valores: [a.fecha, a.fecha, horaAhora], orden: 't.fecha, t.hora' },
+    // todo lo que no es cancelado ni próximo (atendidos, ausentes y reservas viejas que quedaron sin cerrar)
+    historial: { donde: `t.estado <> 'cancelado' AND NOT (${proximo})`, valores: [a.fecha, a.fecha, horaAhora], orden: 't.fecha DESC, t.hora DESC' },
+    cancelados: { donde: "t.estado = 'cancelado'", valores: [], orden: 't.fecha DESC, t.hora DESC' },
+  };
+  const f = filtros[tab];
+
+  try {
+    const [[{ total }]] = await pool.query(
+      `SELECT COUNT(*) AS total FROM turnos t WHERE t.paciente_id = ? AND ${f.donde}`,
+      [req.usuario.id, ...f.valores]
+    );
+    const [filas] = await pool.query(
+      `${SELECT} WHERE t.paciente_id = ? AND ${f.donde} ORDER BY ${f.orden} LIMIT ? OFFSET ?`,
+      [req.usuario.id, ...f.valores, POR_PAGINA, (pagina - 1) * POR_PAGINA]
+    );
+    res.json({ tab, total: Number(total), pagina, por_pagina: POR_PAGINA, items: filas.map(aTurno) });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Error del servidor' });
+  }
+});
+
+// Cambia el estado de un turno PROPIO. Si es de otra persona responde "no encontrado".
+async function cambiarEstado(req, res, { desde, hacia, accion, extra = '' }) {
+  const id = idValido(req.params.id);
+  if (!id) return res.status(400).json({ error: 'Turno inválido' });
+  try {
+    const [filas] = await pool.query('SELECT id, fecha, hora, estado FROM turnos WHERE id = ? AND paciente_id = ?', [id, req.usuario.id]);
+    const t = filas[0];
+    if (!t) return res.status(404).json({ error: 'Turno no encontrado' });
+    if (!desde.includes(t.estado)) {
+      return res.status(409).json({ error: `Este turno está ${t.estado.replace('_', ' ')}, así que no se puede ${accion}.` });
+    }
+    if (!esFuturo(t.fecha, t.hora)) return res.status(409).json({ error: `Ese turno ya empezó o pasó, así que no se puede ${accion}.` });
+
+    const [u] = await pool.query(
+      `UPDATE turnos SET estado = ?${extra} WHERE id = ? AND paciente_id = ? AND estado IN (${desde.map(() => '?').join(',')})`,
+      [hacia, id, req.usuario.id, ...desde]
+    );
+    if (u.affectedRows === 0) return res.status(409).json({ error: 'El turno cambió de estado. Recargá la lista.' });
+    res.json({ estado: hacia });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Error del servidor' });
+  }
+}
+
+router.put('/:id/confirmar', (req, res) => cambiarEstado(req, res, { desde: ['pendiente'], hacia: 'confirmado', accion: 'confirmar' }));
+
+// Cancelar: el turno queda guardado como cancelado y el horario vuelve a estar libre
+router.put('/:id/cancelar', (req, res) =>
+  cambiarEstado(req, res, { desde: ['pendiente', 'confirmado'], hacia: 'cancelado', accion: 'cancelar', extra: ', cancelado_en = NOW()' })
+);
 
 module.exports = router;
