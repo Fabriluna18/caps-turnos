@@ -23,7 +23,7 @@ export const MENUS = {
   paciente: [
     { a: '', texto: 'Inicio', icono: LayoutDashboard },
     { a: 'medicos', texto: 'Médicos', icono: Stethoscope },
-    { a: 'sacar-turno', texto: 'Sacar turno', icono: CalendarPlus, dia: 10 },
+    { a: 'sacar-turno', texto: 'Sacar turno', icono: CalendarPlus },
     { a: 'mis-turnos', texto: 'Mis turnos', icono: CalendarDays, dia: 11 },
     { a: 'mis-recetas', texto: 'Mis recetas', icono: FileText, dia: 13 },
     { a: 'perfil', texto: 'Mi perfil', icono: UserCircle },

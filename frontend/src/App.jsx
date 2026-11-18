@@ -3,6 +3,7 @@ import Layout from './components/Layout';
 import RutaProtegida from './components/RutaProtegida';
 import { MENUS } from './menus';
 import CambiarClave from './pages/CambiarClave';
+import Confirmar from './pages/Confirmar';
 import Horarios from './pages/Horarios';
 import Inicio from './pages/Inicio';
 import InicioPaciente from './pages/InicioPaciente';
@@ -14,6 +15,7 @@ import Pacientes from './pages/Pacientes';
 import Perfil from './pages/Perfil';
 import Proximamente from './pages/Proximamente';
 import Restablecer from './pages/Restablecer';
+import SacarTurnoPaciente from './pages/SacarTurnoPaciente';
 import Turnos from './pages/Turnos';
 
 // Pantallas ya armadas: 'rol/ruta' -> componente
@@ -25,6 +27,7 @@ const PAGINAS = {
   'secretaria/perfil': Perfil,
   'medico/perfil': Perfil,
   'paciente/medicos': MedicosPaciente,
+  'paciente/sacar-turno': SacarTurnoPaciente,
   'paciente/perfil': Perfil,
 };
 
@@ -39,6 +42,7 @@ export default function App() {
         <Route path="/olvide" element={<Olvide />} />
         <Route path="/restablecer" element={<Restablecer />} />
         <Route path="/cambiar-clave" element={<CambiarClave />} />
+        <Route path="/confirmar/:token" element={<Confirmar />} />
 
         {Object.entries(MENUS).map(([rol, opciones]) => {
           const Portada = INICIOS[rol] || Inicio;
