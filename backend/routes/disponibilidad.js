@@ -2,7 +2,9 @@ const express = require('express');
 const pool = require('../db');
 const { verificarToken, permitir } = require('../middleware/auth');
 const { fechaValida } = require('../fechas');
-const { medicoActivo, disponibilidadDelDia, disponibilidadDelMes } = require('../disponibilidad');
+const {
+  medicoActivo, disponibilidadDelDia, disponibilidadDelMes, proximoTurnoLibre,
+} = require('../disponibilidad');
 
 const router = express.Router();
 
@@ -13,10 +15,13 @@ function idValido(valor) {
   return Number.isInteger(n) && n > 0 ? n : null;
 }
 
-// Médicos activos, con los días de la semana en que atienden
+// Médicos activos, con los días de la semana en que atienden.
+// Con ?proximo=1 suma el próximo turno libre de cada uno.
+// Por privacidad solo salen datos públicos: nunca DNI, email, teléfono ni matrícula.
 router.get('/medicos', async (req, res) => {
   const especialidad = Number.parseInt(req.query.especialidad_id, 10);
   const filtrar = Number.isInteger(especialidad);
+  const conProximo = req.query.proximo === '1';
 
   try {
     const [medicos] = await pool.query(
@@ -31,13 +36,42 @@ router.get('/medicos', async (req, res) => {
     const [dias] = await pool.query(
       `SELECT DISTINCT h.medico_id, h.dia_semana
        FROM horarios h JOIN usuarios u ON u.id = h.medico_id
-       WHERE u.activo = 1 AND h.activo = 1 ORDER BY h.medico_id, h.dia_semana`
+       WHERE u.activo = 1 AND h.activo = 1 AND h.eliminado = 0 ORDER BY h.medico_id, h.dia_semana`
     );
 
+    const lista = [];
+    for (const m of medicos) {
+      const fila = { ...m, dias: dias.filter((d) => d.medico_id === m.id).map((d) => d.dia_semana) };
+      if (conProximo) fila.proximo = await proximoTurnoLibre(pool, m.id);
+      lista.push(fila);
+    }
+    res.json(lista);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Error del servidor' });
+  }
+});
+
+// Los horarios semanales vigentes de un médico (solo días, horas y duración del turno)
+router.get('/horarios', async (req, res) => {
+  const medicoId = idValido(req.query.medico_id);
+  if (!medicoId) return res.status(400).json({ error: 'Médico inválido' });
+
+  try {
+    if (!(await medicoActivo(pool, medicoId))) return res.status(404).json({ error: 'Médico no encontrado' });
+
+    const [filas] = await pool.query(
+      `SELECT dia_semana, hora_inicio, hora_fin, duracion_min
+       FROM horarios WHERE medico_id = ? AND activo = 1 AND eliminado = 0
+       ORDER BY dia_semana, hora_inicio`,
+      [medicoId]
+    );
     res.json(
-      medicos.map((m) => ({
-        ...m,
-        dias: dias.filter((d) => d.medico_id === m.id).map((d) => d.dia_semana),
+      filas.map((f) => ({
+        dia_semana: f.dia_semana,
+        hora_inicio: f.hora_inicio.slice(0, 5),
+        hora_fin: f.hora_fin.slice(0, 5),
+        duracion_min: f.duracion_min,
       }))
     );
   } catch (error) {

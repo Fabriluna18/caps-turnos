@@ -3,16 +3,18 @@ import Layout from './components/Layout';
 import RutaProtegida from './components/RutaProtegida';
 import { MENUS } from './menus';
 import CambiarClave from './pages/CambiarClave';
+import Horarios from './pages/Horarios';
 import Inicio from './pages/Inicio';
+import InicioPaciente from './pages/InicioPaciente';
 import Login from './pages/Login';
 import Medicos from './pages/Medicos';
+import MedicosPaciente from './pages/MedicosPaciente';
 import Olvide from './pages/Olvide';
+import Pacientes from './pages/Pacientes';
+import Perfil from './pages/Perfil';
 import Proximamente from './pages/Proximamente';
 import Restablecer from './pages/Restablecer';
-import Horarios from './pages/Horarios';
-import Pacientes from './pages/Pacientes';
 import Turnos from './pages/Turnos';
-
 
 // Pantallas ya armadas: 'rol/ruta' -> componente
 const PAGINAS = {
@@ -20,7 +22,14 @@ const PAGINAS = {
   'secretaria/horarios': Horarios,
   'secretaria/pacientes': Pacientes,
   'secretaria/turnos': Turnos,
+  'secretaria/perfil': Perfil,
+  'medico/perfil': Perfil,
+  'paciente/medicos': MedicosPaciente,
+  'paciente/perfil': Perfil,
 };
+
+// Pantalla de inicio propia de cada rol (si no hay, se usa la genérica)
+const INICIOS = { paciente: InicioPaciente };
 
 export default function App() {
   return (
@@ -31,25 +40,28 @@ export default function App() {
         <Route path="/restablecer" element={<Restablecer />} />
         <Route path="/cambiar-clave" element={<CambiarClave />} />
 
-        {Object.entries(MENUS).map(([rol, opciones]) => (
-          <Route
-            key={rol}
-            path={`/${rol}`}
-            element={<RutaProtegida roles={[rol]}><Layout /></RutaProtegida>}
-          >
-            <Route index element={<Inicio />} />
-            {opciones.filter((o) => o.a).map((o) => {
-              const Pagina = PAGINAS[`${rol}/${o.a}`];
-              return (
-                <Route
-                  key={o.a}
-                  path={o.a}
-                  element={Pagina ? <Pagina /> : <Proximamente titulo={o.texto} dia={o.dia} />}
-                />
-              );
-            })}
-          </Route>
-        ))}
+        {Object.entries(MENUS).map(([rol, opciones]) => {
+          const Portada = INICIOS[rol] || Inicio;
+          return (
+            <Route
+              key={rol}
+              path={`/${rol}`}
+              element={<RutaProtegida roles={[rol]}><Layout /></RutaProtegida>}
+            >
+              <Route index element={<Portada />} />
+              {opciones.filter((o) => o.a).map((o) => {
+                const Pagina = PAGINAS[`${rol}/${o.a}`];
+                return (
+                  <Route
+                    key={o.a}
+                    path={o.a}
+                    element={Pagina ? <Pagina /> : <Proximamente titulo={o.texto} dia={o.dia} />}
+                  />
+                );
+              })}
+            </Route>
+          );
+        })}
 
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>

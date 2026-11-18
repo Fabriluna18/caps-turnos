@@ -28,3 +28,6 @@ export function sumarDias(iso, dias) {
   d.setDate(d.getDate() + dias);
   return d.toLocaleDateString('en-CA');
 }
+
+export const DIAS_CORTOS = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
+export const DIAS_LARGOS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];

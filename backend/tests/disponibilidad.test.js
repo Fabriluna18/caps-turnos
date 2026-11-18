@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { calcularDia, calcularMes } = require('../calculo-turnos');
+const { calcularDia, calcularMes, proximoLibre } = require('../calculo-turnos');
 
 // "Ahora" fijo para que los tests den siempre lo mismo: martes 10/11/2026, 10:00
 const AHORA = { fecha: '2026-11-10', minutos: 10 * 60 };
@@ -107,4 +107,26 @@ test('el calendario del mes devuelve todos los días con sus turnos libres', () 
   const pasado = dias.find((d) => d.fecha === '2026-11-09');
   assert.equal(pasado.libres, 0);
   assert.equal(pasado.motivo, 'pasado');
+});
+
+test('el próximo turno libre es el primero del próximo día de atención', () => {
+  assert.deepEqual(proximoLibre(base(), AHORA), { fecha: LUNES, hora: '08:00' });
+});
+
+test('el próximo turno libre se saltea los horarios ocupados', () => {
+  const datos = base();
+  datos.turnos = [{ fecha: LUNES, hora: '08:00:00', duracion_min: 30 }];
+  assert.deepEqual(proximoLibre(datos, AHORA), { fecha: LUNES, hora: '08:30' });
+});
+
+test('el próximo turno libre se saltea los feriados', () => {
+  const datos = base();
+  datos.feriados = [{ fecha: LUNES, descripcion: 'Día de prueba' }];
+  assert.deepEqual(proximoLibre(datos, AHORA), { fecha: '2026-11-23', hora: '08:00' });
+});
+
+test('si no hay turnos en los próximos 60 días, devuelve null', () => {
+  const datos = base();
+  datos.horarios = [];
+  assert.equal(proximoLibre(datos, AHORA), null);
 });

@@ -1,4 +1,4 @@
-const { diasEntre, diaSemanaISO } = require('./fechas');
+const { diasEntre, diaSemanaISO, sumarDias } = require('./fechas');
 
 // Hasta cuántos días de anticipación se puede sacar un turno
 const DIAS_ANTICIPACION = 60;
@@ -71,4 +71,14 @@ function calcularMes(datos, anio, mes, ahora) {
   return dias;
 }
 
-module.exports = { calcularDia, calcularMes, DIAS_ANTICIPACION };
+// El primer turno libre a partir de hoy (hasta 60 días adelante), o null si no hay
+function proximoLibre(datos, ahora, diasMax = DIAS_ANTICIPACION) {
+  for (let i = 0; i <= diasMax; i++) {
+    const fecha = sumarDias(ahora.fecha, i);
+    const libre = calcularDia(datos, fecha, ahora).turnos.find((t) => t.libre);
+    if (libre) return { fecha, hora: libre.hora };
+  }
+  return null;
+}
+
+module.exports = { calcularDia, calcularMes, proximoLibre, DIAS_ANTICIPACION };

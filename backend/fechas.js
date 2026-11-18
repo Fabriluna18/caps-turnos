@@ -30,4 +30,16 @@ function diaSemanaISO(fecha) {
   return d === 0 ? 7 : d;
 }
 
-module.exports = { ahora, fechaValida, diasEntre, diaSemanaISO };
+// Suma (o resta) días a una fecha AAAA-MM-DD
+function sumarDias(fecha, dias) {
+  const d = new Date(`${fecha}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + dias);
+  return d.toISOString().slice(0, 10);
+}
+
+// 570 minutos -> '09:30:00'
+function horaSQL(minutos) {
+  return `${String(Math.floor(minutos / 60)).padStart(2, '0')}:${String(minutos % 60).padStart(2, '0')}:00`;
+}
+
+module.exports = { ahora, fechaValida, diasEntre, diaSemanaISO, sumarDias, horaSQL };

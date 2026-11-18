@@ -6,9 +6,11 @@ const authRoutes = require('./routes/auth');
 const especialidadRoutes = require('./routes/especialidades');
 const medicoRoutes = require('./routes/medicos');
 const horarioRoutes = require('./routes/horarios');
-const pacienteRoutes = require('./routes/pacientes');
+const pacientesRoutes = require('./routes/pacientes'); // gestión de pacientes (secretaría)
 const disponibilidadRoutes = require('./routes/disponibilidad');
 const turnoRoutes = require('./routes/turnos');
+const portalPacienteRoutes = require('./routes/paciente'); // portal del propio paciente
+const perfilRoutes = require('./routes/perfil');
 
 if (!process.env.JWT_SECRET) {
   console.error('Falta JWT_SECRET en el archivo .env');
@@ -28,15 +30,16 @@ app.get('/', (req, res) => {
 });
 
 app.use('/api/auth', authRoutes);
-
 app.use('/api/especialidades', especialidadRoutes);
 app.use('/api/medicos', medicoRoutes);
 app.use('/api/horarios', horarioRoutes);
-app.use('/api/pacientes', pacienteRoutes);
+app.use('/api/pacientes', pacientesRoutes);
 app.use('/api/disponibilidad', disponibilidadRoutes);
 app.use('/api/turnos', turnoRoutes);
+app.use('/api/paciente', portalPacienteRoutes);
+app.use('/api/perfil', perfilRoutes);
 
-// Ruta de prueba de la conexión (la sacamos antes de publicar)
+// Ruta de prueba de la conexión (la sacamos antes de entregar)
 app.get('/db-test', async (req, res) => {
   try {
     const [filas] = await pool.query('SELECT NOW() AS ahora, VERSION() AS version');
@@ -45,10 +48,6 @@ app.get('/db-test', async (req, res) => {
     console.error(error);
     res.status(500).json({ conectado: false, error: error.code || error.message });
   }
-});
-
-app.listen(PORT, () => {
-  console.log(`Servidor corriendo en http://localhost:${PORT}`);
 });
 
 // Rutas que no existen
@@ -66,4 +65,8 @@ app.use((err, req, res, next) => {
   }
   console.error(err);
   res.status(500).json({ error: 'Error del servidor' });
+});
+
+app.listen(PORT, () => {
+  console.log(`Servidor corriendo en http://localhost:${PORT}`);
 });

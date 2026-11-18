@@ -245,3 +245,22 @@ button.hora.libre:active { transform: scale(0.96); }
 .reprogramar { border: 2px solid var(--color-primario); }
 .dos-columnas { margin-bottom: 20px; }
 button.hora.libre.elegida { background: var(--color-primario); color: white; }
+
+/* ===== Día 9: portal del paciente ===== */
+.avatar { display: flex; align-items: center; justify-content: center; border-radius: 50%; color: white; font-weight: 700; flex-shrink: 0; }
+
+.dato-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin-bottom: 20px; }
+.dato-card { background: var(--color-superficie); border-radius: 14px; padding: 18px; box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06); display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
+.dato-card.principal { border-left: 5px solid var(--color-primario); }
+.dato-titulo { font-size: 0.8rem; font-weight: 600; color: var(--color-texto-suave); text-transform: uppercase; letter-spacing: 0.03em; }
+.dato-grande { font-size: 1.4rem; }
+.dato-hora { font-size: 1.1rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+
+.medicos-lista { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
+.medico-card { background: var(--color-superficie); border-radius: 14px; padding: 18px; box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06); display: flex; flex-direction: column; gap: 12px; }
+.medico-cab { display: flex; align-items: center; gap: 12px; }
+.medico-cab .suave { margin: 2px 0 0; }
+.dias-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.dia-chip { padding: 3px 10px; border-radius: 999px; background: #eef2ff; color: var(--color-primario); font-size: 0.8rem; font-weight: 600; }
+.proximo { margin: 0; font-size: 0.9rem; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.horarios-semana { border-top: 1px solid #eef0f6; padding-top: 10px; }

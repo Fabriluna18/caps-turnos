@@ -1,12 +1,12 @@
-const { calcularDia, calcularMes } = require('./calculo-turnos');
-const { ahora } = require('./fechas');
+const { calcularDia, calcularMes, proximoLibre, DIAS_ANTICIPACION } = require('./calculo-turnos');
+const { ahora, sumarDias } = require('./fechas');
 
 // Trae de la base lo que hace falta para calcular los turnos de un rango de fechas
-// (solo lo vigente: lo desactivado no se tiene en cuenta)
+// (solo lo vigente: lo desactivado o eliminado no se tiene en cuenta)
 async function cargarDatos(conexion, medicoId, desde, hasta) {
   const [horarios] = await conexion.query(
     `SELECT dia_semana, hora_inicio, hora_fin, duracion_min
-     FROM horarios WHERE medico_id = ? AND activo = 1 ORDER BY dia_semana, hora_inicio`,
+     FROM horarios WHERE medico_id = ? AND activo = 1 AND eliminado = 0 ORDER BY dia_semana, hora_inicio`,
     [medicoId]
   );
   const [licencias] = await conexion.query(
@@ -44,4 +44,11 @@ async function disponibilidadDelMes(conexion, medicoId, anio, mes) {
   return calcularMes(datos, anio, mes, ahora());
 }
 
-module.exports = { medicoActivo, disponibilidadDelDia, disponibilidadDelMes };
+// El primer turno libre de un médico, con el mismo cálculo que ve el calendario
+async function proximoTurnoLibre(conexion, medicoId) {
+  const hoy = ahora();
+  const datos = await cargarDatos(conexion, medicoId, hoy.fecha, sumarDias(hoy.fecha, DIAS_ANTICIPACION));
+  return proximoLibre(datos, hoy);
+}
+
+module.exports = { medicoActivo, disponibilidadDelDia, disponibilidadDelMes, proximoTurnoLibre };
