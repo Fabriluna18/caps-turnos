@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
-import { ChevronLeft, ChevronRight, FileText } from 'lucide-react';
+import { ChevronLeft, ChevronRight, FileText, History } from 'lucide-react';
 import { apiFetch } from '../api/client';
 import { mensajeDeError } from '../api/errores';
+import HistorialPaciente from '../components/HistorialPaciente';
 import RecetaForm from '../components/RecetaForm';
 import { ESTADOS } from '../estados';
 import { diaDeSemana, formatoFecha, hoyISO, sumarDias } from '../fechas';
@@ -13,6 +14,7 @@ export default function AgendaMedico() {
   const [trabajando, setTrabajando] = useState(false);
   const [recetaDe, setRecetaDe] = useState(null); // turno al que se le está haciendo receta
   const [recetaHecha, setRecetaHecha] = useState(null);
+  const [historialDe, setHistorialDe] = useState(null); // id del turno cuyo historial se muestra
 
   const cargar = useCallback(() => {
     apiFetch(`/medico/agenda?fecha=${fecha}`)
@@ -26,6 +28,7 @@ export default function AgendaMedico() {
   useEffect(() => {
     setAgenda(null);
     setRecetaDe(null);
+    setHistorialDe(null);
     cargar();
   }, [cargar]);
 
@@ -115,6 +118,12 @@ export default function AgendaMedico() {
                         <td>{t.motivo || <span className="suave">—</span>}</td>
                         <td><span className={`estado ${t.estado}`}>{ESTADOS[t.estado]}</span></td>
                         <td>
+                          <button
+                            className="boton-chico secundario" style={{ marginBottom: 4 }}
+                            onClick={() => { setRecetaDe(null); setHistorialDe(historialDe === t.id ? null : t.id); }}
+                          >
+                            <History size={14} /> Historial
+                          </button>
                           {agenda.puede_marcar && (
                             <div className="acciones" style={{ marginTop: 0 }}>
                               {(t.estado === 'pendiente' || t.estado === 'confirmado') && (
@@ -129,7 +138,7 @@ export default function AgendaMedico() {
                               {(t.estado === 'en_atencion' || t.estado === 'atendido') && (
                                 <button
                                   className="boton-chico secundario"
-                                  onClick={() => { setRecetaHecha(null); setRecetaDe(t); }}
+                                  onClick={() => { setRecetaHecha(null); setHistorialDe(null); setRecetaDe(t); }}
                                 >
                                   <FileText size={14} /> Receta{t.recetas > 0 ? ` (${t.recetas})` : ''}
                                 </button>
@@ -149,6 +158,7 @@ export default function AgendaMedico() {
             </div>
           )}
 
+          {historialDe && <HistorialPaciente key={historialDe} turnoId={historialDe} onCerrar={() => setHistorialDe(null)} />}
           {recetaDe && <RecetaForm key={recetaDe.id} turno={recetaDe} onListo={recetaLista} onCerrar={() => setRecetaDe(null)} />}
         </>
       )}

@@ -113,10 +113,6 @@ export default function RecetaVer() {
             </div>
           </div>
 
-          <div className="rx-pie">
-            Documento generado con fines demostrativos para un trabajo de tesis. No es una receta válida y no puede
-            presentarse en farmacias.
-          </div>
         </div>
       )}
     </div>

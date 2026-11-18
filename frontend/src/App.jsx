@@ -7,6 +7,7 @@ import CambiarClave from './pages/CambiarClave';
 import Confirmar from './pages/Confirmar';
 import Horarios from './pages/Horarios';
 import Inicio from './pages/Inicio';
+import InicioMedico from './pages/InicioMedico';
 import InicioPaciente from './pages/InicioPaciente';
 import Login from './pages/Login';
 import Medicos from './pages/Medicos';
@@ -40,7 +41,7 @@ const PAGINAS = {
 };
 
 // Pantalla de inicio propia de cada rol (si no hay, se usa la genérica)
-const INICIOS = { paciente: InicioPaciente };
+const INICIOS = { medico: InicioMedico, paciente: InicioPaciente };
 
 export default function App() {
   return (

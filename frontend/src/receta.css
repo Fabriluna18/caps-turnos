@@ -21,7 +21,6 @@
 .rx-firma { margin-top: 56px; display: flex; justify-content: flex-end; }
 .rx-firma div { border-top: 1px solid #111; min-width: 240px; text-align: center; padding-top: 6px; font-size: 13px; }
 .rx-anulada { border: 2px solid #b91c1c; color: #b91c1c; font-weight: 700; padding: 8px 12px; margin-bottom: 16px; text-align: center; }
-.rx-pie { margin-top: 24px; font-size: 11px; color: #666; border-top: 1px dashed #bbb; padding-top: 8px; }
 
 @media (max-width: 600px) {
   .rx-hoja { padding: 24px 18px; }
