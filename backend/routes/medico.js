@@ -37,6 +37,7 @@ router.get('/agenda', async (req, res) => {
   try {
     const [filas] = await pool.query(
       `SELECT t.id, t.hora, t.duracion_min, t.estado, t.motivo,
+              (SELECT COUNT(*) FROM recetas r WHERE r.turno_id = t.id AND r.anulada = 0) AS recetas,
               u.nombre, u.apellido, u.dni, p.fecha_nacimiento, p.cobertura
        FROM turnos t
        JOIN usuarios u ON u.id = t.paciente_id
@@ -64,6 +65,7 @@ router.get('/agenda', async (req, res) => {
         duracion_min: t.duracion_min,
         estado: t.estado,
         motivo: t.motivo,
+        recetas: Number(t.recetas),
         paciente: {
           nombre: t.nombre,
           apellido: t.apellido,

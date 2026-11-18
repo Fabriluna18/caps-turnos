@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, FileText } from 'lucide-react';
 import { apiFetch } from '../api/client';
 import { mensajeDeError } from '../api/errores';
+import RecetaForm from '../components/RecetaForm';
 import { ESTADOS } from '../estados';
 import { diaDeSemana, formatoFecha, hoyISO, sumarDias } from '../fechas';
 
@@ -10,6 +11,8 @@ export default function AgendaMedico() {
   const [agenda, setAgenda] = useState(null);
   const [error, setError] = useState('');
   const [trabajando, setTrabajando] = useState(false);
+  const [recetaDe, setRecetaDe] = useState(null); // turno al que se le está haciendo receta
+  const [recetaHecha, setRecetaHecha] = useState(null);
 
   const cargar = useCallback(() => {
     apiFetch(`/medico/agenda?fecha=${fecha}`)
@@ -22,8 +25,15 @@ export default function AgendaMedico() {
 
   useEffect(() => {
     setAgenda(null);
+    setRecetaDe(null);
     cargar();
   }, [cargar]);
+
+  const recetaLista = (id) => {
+    setRecetaDe(null);
+    setRecetaHecha(id);
+    cargar();
+  };
 
   // El día de hoy se actualiza solo cada minuto (por si la secretaría cambia algo)
   useEffect(() => {
@@ -60,6 +70,12 @@ export default function AgendaMedico() {
       </div>
       <h2 style={{ textTransform: 'capitalize' }}>{diaDeSemana(fecha)} {formatoFecha(fecha)}</h2>
       {error && <p className="error" role="alert">{error}</p>}
+      {recetaHecha && (
+        <p className="exito" role="status">
+          Receta emitida.{' '}
+          <a className="enlace" href={`/receta/${recetaHecha}`} target="_blank" rel="noopener noreferrer">Verla e imprimirla</a>
+        </p>
+      )}
       {!agenda && !error && <p className="suave">Cargando...</p>}
 
       {agenda && (
@@ -110,6 +126,14 @@ export default function AgendaMedico() {
                               {abierto && t.estado !== 'en_atencion' && (
                                 <button className="boton-chico secundario" disabled={trabajando} onClick={() => marcar(t, 'ausente')}>Ausente</button>
                               )}
+                              {(t.estado === 'en_atencion' || t.estado === 'atendido') && (
+                                <button
+                                  className="boton-chico secundario"
+                                  onClick={() => { setRecetaHecha(null); setRecetaDe(t); }}
+                                >
+                                  <FileText size={14} /> Receta{t.recetas > 0 ? ` (${t.recetas})` : ''}
+                                </button>
+                              )}
                               {t.estado === 'ausente' && (
                                 <button className="boton-chico secundario" disabled={trabajando} onClick={() => marcar(t, 'en_atencion')}>Llegó</button>
                               )}
@@ -124,6 +148,8 @@ export default function AgendaMedico() {
               <p className="leyenda">Una vez marcado como atendido, el turno ya no se puede modificar.</p>
             </div>
           )}
+
+          {recetaDe && <RecetaForm key={recetaDe.id} turno={recetaDe} onListo={recetaLista} onCerrar={() => setRecetaDe(null)} />}
         </>
       )}
     </>

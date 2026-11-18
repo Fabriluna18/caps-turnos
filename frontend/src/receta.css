@@ -1,0 +1,38 @@
+/* Receta imprimible (solo la usa la página /receta/:id) */
+.rx-fondo { min-height: 100vh; background: #eef1f5; padding: 24px 16px; }
+.rx-barra { max-width: 760px; margin: 0 auto 16px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.rx-hoja {
+  position: relative; overflow: hidden; max-width: 760px; margin: 0 auto; background: #fff; color: #111;
+  padding: 40px 44px; border-radius: 8px; box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08); font-size: 15px; line-height: 1.5;
+}
+.rx-marca {
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; pointer-events: none;
+  font-size: 54px; font-weight: 800; letter-spacing: 4px; color: rgba(200, 30, 30, 0.13);
+  transform: rotate(-28deg); text-align: center; white-space: pre-line; z-index: 0;
+}
+.rx-hoja > *:not(.rx-marca) { position: relative; z-index: 1; }
+.rx-cab { display: flex; justify-content: space-between; gap: 16px; border-bottom: 2px solid #111; padding-bottom: 12px; margin-bottom: 16px; }
+.rx-cab h1 { margin: 0; font-size: 20px; }
+.rx-chico { font-size: 13px; color: #444; }
+.rx-datos { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 4px 16px; margin-bottom: 16px; }
+.rx-titulo { font-size: 32px; font-weight: 700; font-family: Georgia, serif; margin: 8px 0; }
+.rx-items { margin: 0 0 16px; padding-left: 22px; }
+.rx-items li { margin-bottom: 10px; }
+.rx-firma { margin-top: 56px; display: flex; justify-content: flex-end; }
+.rx-firma div { border-top: 1px solid #111; min-width: 240px; text-align: center; padding-top: 6px; font-size: 13px; }
+.rx-anulada { border: 2px solid #b91c1c; color: #b91c1c; font-weight: 700; padding: 8px 12px; margin-bottom: 16px; text-align: center; }
+.rx-pie { margin-top: 24px; font-size: 11px; color: #666; border-top: 1px dashed #bbb; padding-top: 8px; }
+
+@media (max-width: 600px) {
+  .rx-hoja { padding: 24px 18px; }
+  .rx-marca { font-size: 30px; }
+}
+
+@media print {
+  @page { size: A4; margin: 14mm; }
+  body { background: #fff !important; }
+  .rx-fondo { background: #fff; padding: 0; }
+  .rx-no-imprimir { display: none !important; }
+  .rx-hoja { box-shadow: none; border-radius: 0; max-width: none; padding: 0; }
+  .rx-marca { position: fixed; color: rgba(200, 30, 30, 0.16); -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}

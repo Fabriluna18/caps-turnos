@@ -16,6 +16,8 @@ import Olvide from './pages/Olvide';
 import Pacientes from './pages/Pacientes';
 import Perfil from './pages/Perfil';
 import Proximamente from './pages/Proximamente';
+import RecetaVer from './pages/RecetaVer';
+import Recetas from './pages/Recetas';
 import Restablecer from './pages/Restablecer';
 import SacarTurnoPaciente from './pages/SacarTurnoPaciente';
 import Turnos from './pages/Turnos';
@@ -28,10 +30,12 @@ const PAGINAS = {
   'secretaria/turnos': Turnos,
   'secretaria/perfil': Perfil,
   'medico/agenda': AgendaMedico,
+  'medico/recetas': Recetas,
   'medico/perfil': Perfil,
   'paciente/medicos': MedicosPaciente,
   'paciente/sacar-turno': SacarTurnoPaciente,
   'paciente/mis-turnos': MisTurnos,
+  'paciente/mis-recetas': Recetas,
   'paciente/perfil': Perfil,
 };
 
@@ -47,6 +51,10 @@ export default function App() {
         <Route path="/restablecer" element={<Restablecer />} />
         <Route path="/cambiar-clave" element={<CambiarClave />} />
         <Route path="/confirmar/:token" element={<Confirmar />} />
+        <Route
+          path="/receta/:id"
+          element={<RutaProtegida roles={['medico', 'paciente']}><RecetaVer /></RutaProtegida>}
+        />
 
         {Object.entries(MENUS).map(([rol, opciones]) => {
           const Portada = INICIOS[rol] || Inicio;

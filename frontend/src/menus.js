@@ -16,7 +16,7 @@ export const MENUS = {
   medico: [
     { a: '', texto: 'Inicio', icono: LayoutDashboard },
     { a: 'agenda', texto: 'Agenda del día', icono: CalendarDays },
-    { a: 'recetas', texto: 'Recetas', icono: FileText, dia: 13 },
+    { a: 'recetas', texto: 'Recetas', icono: FileText },
     { a: 'pacientes', texto: 'Pacientes', icono: Users, dia: 15 },
     { a: 'perfil', texto: 'Mi perfil', icono: UserCircle },
   ],
@@ -25,7 +25,7 @@ export const MENUS = {
     { a: 'medicos', texto: 'Médicos', icono: Stethoscope },
     { a: 'sacar-turno', texto: 'Sacar turno', icono: CalendarPlus },
     { a: 'mis-turnos', texto: 'Mis turnos', icono: CalendarDays },
-    { a: 'mis-recetas', texto: 'Mis recetas', icono: FileText, dia: 13 },
+    { a: 'mis-recetas', texto: 'Mis recetas', icono: FileText },
     { a: 'perfil', texto: 'Mi perfil', icono: UserCircle },
   ],
 };
