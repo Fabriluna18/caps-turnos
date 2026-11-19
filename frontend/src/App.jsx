@@ -3,6 +3,7 @@ import Layout from './components/Layout';
 import RutaProtegida from './components/RutaProtegida';
 import { MENUS } from './menus';
 import AgendaMedico from './pages/AgendaMedico';
+import Atencion from './pages/Atencion';
 import CambiarClave from './pages/CambiarClave';
 import Confirmar from './pages/Confirmar';
 import Horarios from './pages/Horarios';
@@ -45,6 +46,9 @@ const PAGINAS = {
 };
 
 // Pantalla de inicio propia de cada rol (si no hay, se usa la genérica)
+// Pantallas que no están en el menú (se llega desde otra)
+const EXTRAS = { medico: [{ ruta: 'atencion/:turnoId', Pagina: Atencion }] };
+
 const INICIOS = { medico: InicioMedico, paciente: InicioPaciente };
 
 export default function App() {
@@ -80,6 +84,9 @@ export default function App() {
                   />
                 );
               })}
+              {(EXTRAS[rol] || []).map(({ ruta, Pagina }) => (
+                <Route key={ruta} path={ruta} element={<Pagina />} />
+              ))}
             </Route>
           );
         })}

@@ -38,6 +38,7 @@ router.get('/agenda', async (req, res) => {
     const [filas] = await pool.query(
       `SELECT t.id, t.hora, t.duracion_min, t.estado, t.motivo,
               (SELECT COUNT(*) FROM recetas r WHERE r.turno_id = t.id AND r.anulada = 0) AS recetas,
+              (SELECT COUNT(*) FROM atenciones a WHERE a.turno_id = t.id) AS con_atencion,
               (SELECT f.alergias FROM fichas f WHERE f.paciente_id = t.paciente_id ORDER BY f.id DESC LIMIT 1) AS alergias,
               t.paciente_id, u.nombre, u.apellido, u.dni, p.fecha_nacimiento, p.cobertura
        FROM turnos t
@@ -67,6 +68,7 @@ router.get('/agenda', async (req, res) => {
         estado: t.estado,
         motivo: t.motivo,
         recetas: Number(t.recetas),
+        con_atencion: Number(t.con_atencion) > 0,
         paciente: {
           id: t.paciente_id,
           alergias: t.alergias,
@@ -130,6 +132,10 @@ router.put('/turnos/:id/estado', async (req, res) => {
       }
     }
     await conexion.query('UPDATE turnos SET estado = ? WHERE id = ?', [nuevo, id]);
+    if (nuevo === 'atendido') {
+      // Si había una atención a medio cargar, queda cerrada tal como está
+      await conexion.query('UPDATE atenciones SET finalizada = 1, finalizada_en = NOW() WHERE turno_id = ? AND finalizada = 0', [id]);
+    }
     await conexion.commit();
     res.json({ estado: nuevo });
   } catch (error) {
@@ -206,9 +212,10 @@ router.get('/turnos/:id/historial', async (req, res) => {
     if (!t) return res.status(404).json({ error: 'Turno no encontrado' });
 
     const [consultas] = await pool.query(
-      `SELECT t.id, t.fecha, t.hora, t.estado, t.motivo,
+      `SELECT t.id, t.fecha, t.hora, t.estado, t.motivo, a.diagnostico,
               (SELECT COUNT(*) FROM recetas r WHERE r.turno_id = t.id AND r.anulada = 0) AS recetas
        FROM turnos t
+       LEFT JOIN atenciones a ON a.turno_id = t.id
        WHERE t.paciente_id = ? AND t.medico_id = ? AND t.id <> ? AND t.estado IN ('atendido','ausente')
        ORDER BY t.fecha DESC, t.hora DESC LIMIT 20`,
       [t.paciente_id, req.usuario.id, id]
@@ -225,7 +232,7 @@ router.get('/turnos/:id/historial', async (req, res) => {
     res.json({
       paciente: { nombre: t.nombre, apellido: t.apellido, dni: t.dni, fecha_nacimiento: t.fecha_nacimiento, cobertura: t.cobertura },
       resumen: { atendidas, ausencias: consultas.length - atendidas },
-      consultas: consultas.map((c) => ({ id: c.id, fecha: c.fecha, hora: c.hora.slice(0, 5), estado: c.estado, motivo: c.motivo, recetas: Number(c.recetas) })),
+      consultas: consultas.map((c) => ({ id: c.id, fecha: c.fecha, hora: c.hora.slice(0, 5), estado: c.estado, motivo: c.motivo, diagnostico: c.diagnostico, recetas: Number(c.recetas) })),
       recetas: recetas.map((r) => ({ ...r, anulada: Boolean(r.anulada) })),
     });
   } catch (error) {

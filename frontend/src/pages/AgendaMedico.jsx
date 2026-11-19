@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
-import { AlertTriangle, ChevronLeft, ChevronRight, ClipboardList, FileText, History } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { AlertTriangle, ChevronLeft, ChevronRight, ClipboardList, FileText, History, Stethoscope } from 'lucide-react';
 import { apiFetch } from '../api/client';
 import { mensajeDeError } from '../api/errores';
 import FichaClinica from '../components/FichaClinica';
@@ -9,6 +10,7 @@ import { ESTADOS } from '../estados';
 import { diaDeSemana, formatoFecha, hoyISO, sumarDias } from '../fechas';
 
 export default function AgendaMedico() {
+  const navigate = useNavigate();
   const [fecha, setFecha] = useState(hoyISO());
   const [agenda, setAgenda] = useState(null);
   const [error, setError] = useState('');
@@ -53,6 +55,8 @@ export default function AgendaMedico() {
     setTrabajando(true);
     try {
       await apiFetch(`/medico/turnos/${t.id}/estado`, { method: 'PUT', body: JSON.stringify({ estado }) });
+      // Al empezar la consulta se abre directamente la pantalla de atención
+      if (estado === 'en_atencion') navigate(`/medico/atencion/${t.id}`);
     } catch (err) {
       setError(mensajeDeError(err));
     } finally {
@@ -148,6 +152,11 @@ export default function AgendaMedico() {
                               )}
                               {abierto && t.estado !== 'en_atencion' && (
                                 <button className="boton-chico secundario" disabled={trabajando} onClick={() => marcar(t, 'ausente')}>Ausente</button>
+                              )}
+                              {(t.estado === 'en_atencion' || (t.estado === 'atendido' && t.con_atencion)) && (
+                                <Link className="boton-chico" to={`/medico/atencion/${t.id}`}>
+                                  <Stethoscope size={14} /> {t.estado === 'en_atencion' ? 'Atención' : 'Ver atención'}
+                                </Link>
                               )}
                               {(t.estado === 'en_atencion' || t.estado === 'atendido') && (
                                 <button

@@ -40,7 +40,7 @@ export default function HistorialPaciente({ turnoId, onCerrar }) {
                 {h.consultas.map((c) => (
                   <tr key={c.id}>
                     <td><strong>{formatoFecha(c.fecha)}</strong> <span className="suave">{c.hora}</span></td>
-                    <td>{c.motivo || <span className="suave">—</span>}{c.recetas > 0 && <div className="suave">Con receta</div>}</td>
+                    <td>{c.motivo || <span className="suave">—</span>}{c.diagnostico && <div><strong>Dx:</strong> {c.diagnostico}</div>}{c.recetas > 0 && <div className="suave">Con receta</div>}</td>
                     <td><span className={`estado ${c.estado}`}>{ESTADOS[c.estado]}</span></td>
                   </tr>
                 ))}
