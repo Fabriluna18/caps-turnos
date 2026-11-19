@@ -38,7 +38,8 @@ router.get('/agenda', async (req, res) => {
     const [filas] = await pool.query(
       `SELECT t.id, t.hora, t.duracion_min, t.estado, t.motivo,
               (SELECT COUNT(*) FROM recetas r WHERE r.turno_id = t.id AND r.anulada = 0) AS recetas,
-              u.nombre, u.apellido, u.dni, p.fecha_nacimiento, p.cobertura
+              (SELECT f.alergias FROM fichas f WHERE f.paciente_id = t.paciente_id ORDER BY f.id DESC LIMIT 1) AS alergias,
+              t.paciente_id, u.nombre, u.apellido, u.dni, p.fecha_nacimiento, p.cobertura
        FROM turnos t
        JOIN usuarios u ON u.id = t.paciente_id
        LEFT JOIN pacientes p ON p.usuario_id = t.paciente_id
@@ -67,6 +68,8 @@ router.get('/agenda', async (req, res) => {
         motivo: t.motivo,
         recetas: Number(t.recetas),
         paciente: {
+          id: t.paciente_id,
+          alergias: t.alergias,
           nombre: t.nombre,
           apellido: t.apellido,
           dni: t.dni,

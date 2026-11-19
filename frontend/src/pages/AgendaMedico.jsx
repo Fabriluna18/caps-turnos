@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
-import { ChevronLeft, ChevronRight, FileText, History } from 'lucide-react';
+import { AlertTriangle, ChevronLeft, ChevronRight, ClipboardList, FileText, History } from 'lucide-react';
 import { apiFetch } from '../api/client';
 import { mensajeDeError } from '../api/errores';
+import FichaClinica from '../components/FichaClinica';
 import HistorialPaciente from '../components/HistorialPaciente';
 import RecetaForm from '../components/RecetaForm';
 import { ESTADOS } from '../estados';
@@ -15,6 +16,7 @@ export default function AgendaMedico() {
   const [recetaDe, setRecetaDe] = useState(null); // turno al que se le está haciendo receta
   const [recetaHecha, setRecetaHecha] = useState(null);
   const [historialDe, setHistorialDe] = useState(null); // id del turno cuyo historial se muestra
+  const [fichaDe, setFichaDe] = useState(null); // id del paciente cuya ficha se muestra
 
   const cargar = useCallback(() => {
     apiFetch(`/medico/agenda?fecha=${fecha}`)
@@ -29,6 +31,7 @@ export default function AgendaMedico() {
     setAgenda(null);
     setRecetaDe(null);
     setHistorialDe(null);
+    setFichaDe(null);
     cargar();
   }, [cargar]);
 
@@ -114,15 +117,26 @@ export default function AgendaMedico() {
                             {t.paciente.edad != null ? ` · ${t.paciente.edad} años` : ''}
                             {t.paciente.cobertura ? ` · ${t.paciente.cobertura}` : ''}
                           </div>
+                          {t.paciente.alergias && (
+                            <div className="error" style={{ display: 'inline-flex', gap: 4, alignItems: 'center', padding: '2px 8px', marginTop: 4 }}>
+                              <AlertTriangle size={12} /> Alergias: {t.paciente.alergias}
+                            </div>
+                          )}
                         </td>
                         <td>{t.motivo || <span className="suave">—</span>}</td>
                         <td><span className={`estado ${t.estado}`}>{ESTADOS[t.estado]}</span></td>
                         <td>
                           <button
                             className="boton-chico secundario" style={{ marginBottom: 4 }}
-                            onClick={() => { setRecetaDe(null); setHistorialDe(historialDe === t.id ? null : t.id); }}
+                            onClick={() => { setRecetaDe(null); setFichaDe(null); setHistorialDe(historialDe === t.id ? null : t.id); }}
                           >
                             <History size={14} /> Historial
+                          </button>{' '}
+                          <button
+                            className="boton-chico secundario" style={{ marginBottom: 4 }}
+                            onClick={() => { setRecetaDe(null); setHistorialDe(null); setFichaDe(fichaDe === t.paciente.id ? null : t.paciente.id); }}
+                          >
+                            <ClipboardList size={14} /> Ficha
                           </button>
                           {agenda.puede_marcar && (
                             <div className="acciones" style={{ marginTop: 0 }}>
@@ -138,7 +152,7 @@ export default function AgendaMedico() {
                               {(t.estado === 'en_atencion' || t.estado === 'atendido') && (
                                 <button
                                   className="boton-chico secundario"
-                                  onClick={() => { setRecetaHecha(null); setHistorialDe(null); setRecetaDe(t); }}
+                                  onClick={() => { setRecetaHecha(null); setHistorialDe(null); setFichaDe(null); setRecetaDe(t); }}
                                 >
                                   <FileText size={14} /> Receta{t.recetas > 0 ? ` (${t.recetas})` : ''}
                                 </button>
@@ -158,6 +172,7 @@ export default function AgendaMedico() {
             </div>
           )}
 
+          {fichaDe && <FichaClinica key={fichaDe} pacienteId={fichaDe} onCerrar={() => { setFichaDe(null); cargar(); }} />}
           {historialDe && <HistorialPaciente key={historialDe} turnoId={historialDe} onCerrar={() => setHistorialDe(null)} />}
           {recetaDe && <RecetaForm key={recetaDe.id} turno={recetaDe} onListo={recetaLista} onCerrar={() => setRecetaDe(null)} />}
         </>

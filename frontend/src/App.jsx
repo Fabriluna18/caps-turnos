@@ -11,10 +11,12 @@ import InicioMedico from './pages/InicioMedico';
 import InicioPaciente from './pages/InicioPaciente';
 import Login from './pages/Login';
 import Medicos from './pages/Medicos';
+import MiFicha from './pages/MiFicha';
 import MisTurnos from './pages/MisTurnos';
 import MedicosPaciente from './pages/MedicosPaciente';
 import Olvide from './pages/Olvide';
 import Pacientes from './pages/Pacientes';
+import PacientesMedico from './pages/PacientesMedico';
 import Perfil from './pages/Perfil';
 import Proximamente from './pages/Proximamente';
 import RecetaVer from './pages/RecetaVer';
@@ -32,11 +34,13 @@ const PAGINAS = {
   'secretaria/perfil': Perfil,
   'medico/agenda': AgendaMedico,
   'medico/recetas': Recetas,
+  'medico/pacientes': PacientesMedico,
   'medico/perfil': Perfil,
   'paciente/medicos': MedicosPaciente,
   'paciente/sacar-turno': SacarTurnoPaciente,
   'paciente/mis-turnos': MisTurnos,
   'paciente/mis-recetas': Recetas,
+  'paciente/mi-ficha': MiFicha,
   'paciente/perfil': Perfil,
 };
 
