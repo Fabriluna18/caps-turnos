@@ -1,7 +1,6 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
-const pool = require('./db');
 const authRoutes = require('./routes/auth');
 const especialidadRoutes = require('./routes/especialidades');
 const medicoRoutes = require('./routes/medicos');
@@ -33,6 +32,17 @@ const PORT = process.env.PORT || 3001;
 const origenes = (process.env.CORS_ORIGIN || 'http://localhost:5173').split(',');
 
 app.use(cors({ origin: origenes }));
+
+// Cabeceras de seguridad para todas las respuestas
+app.use((req, res, next) => {
+  res.set({
+    'X-Content-Type-Options': 'nosniff', // el navegador no adivina tipos de archivo
+    'X-Frame-Options': 'DENY', // nadie puede meter la API dentro de otra página
+    'Referrer-Policy': 'no-referrer', // los enlaces con códigos (confirmar, restablecer) no se filtran a otros sitios
+    'Cache-Control': 'no-store', // los datos no quedan guardados en la caché del navegador
+  });
+  next();
+});
 app.use(express.json());
 
 app.get('/', (req, res) => {
@@ -58,17 +68,6 @@ app.use('/api/recetas', recetaRoutes);
 app.use('/api/reportes', reporteRoutes);
 app.use('/api/secretaria', secretariaRoutes);
 app.use('/api/perfil', perfilRoutes);
-
-// Ruta de prueba de la conexión (la sacamos antes de publicar)
-app.get('/db-test', async (req, res) => {
-  try {
-    const [filas] = await pool.query('SELECT NOW() AS ahora, VERSION() AS version');
-    res.json({ conectado: true, ...filas[0] });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ conectado: false, error: error.code || error.message });
-  }
-});
 
 app.use((req, res) => res.status(404).json({ error: 'No encontrado' }));
 

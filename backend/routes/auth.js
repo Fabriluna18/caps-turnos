@@ -6,6 +6,7 @@ const pool = require('../db');
 const { verificarToken, verificarTokenSinBloqueo, permitir } = require('../middleware/auth');
 const { bloqueado, registrarFallo, limpiar } = require('../limite');
 const { enviarMail } = require('../mailer');
+const { cerrarSesiones } = require('../sesiones');
 
 const router = express.Router();
 
@@ -176,6 +177,8 @@ router.post('/restablecer', async (req, res) => {
     await conexion.query('UPDATE recuperaciones SET usado_en = NOW() WHERE usuario_id = ? AND usado_en IS NULL', [
       filas[0].usuario_id,
     ]);
+    // Si alguien tenía la sesión abierta con la contraseña vieja, se le cierra
+    await cerrarSesiones(conexion, filas[0].usuario_id);
     await conexion.commit();
 
     res.json({ mensaje: 'Listo, ya podés ingresar con tu contraseña nueva.' });
@@ -225,20 +228,19 @@ router.post('/cambiar-clave', verificarTokenSinBloqueo, async (req, res) => {
     await pool.query('UPDATE recuperaciones SET usado_en = NOW() WHERE usuario_id = ? AND usado_en IS NULL', [
       req.usuario.id,
     ]);
+    // Se cierran las sesiones abiertas en otros dispositivos y este recibe un ingreso nuevo
+    await cerrarSesiones(pool, req.usuario.id);
+    const token = jwt.sign({ id: req.usuario.id }, process.env.JWT_SECRET, { expiresIn: '8h' });
 
     res.json({
       mensaje: 'Contraseña actualizada',
+      token,
       usuario: datosPublicos({ ...req.usuario, debe_cambiar_clave: 0 }),
     });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Error del servidor' });
   }
-});
-
-// Ruta de prueba de permisos (la sacamos más adelante)
-router.get('/prueba-secretaria', verificarToken, permitir('secretaria'), (req, res) => {
-  res.json({ mensaje: 'Tenés permiso de secretaría ✅' });
 });
 
 module.exports = router;

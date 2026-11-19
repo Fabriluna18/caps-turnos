@@ -138,3 +138,104 @@ CREATE TABLE IF NOT EXISTS confirmaciones (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 ALTER TABLE turnos ADD COLUMN IF NOT EXISTS recordatorio_enviado_en DATETIME NULL;
+
+-- Día 13: recetas (no se borran ni se editan: se anulan)
+CREATE TABLE IF NOT EXISTS recetas (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  turno_id INT UNSIGNED NOT NULL,
+  medico_id INT UNSIGNED NOT NULL,
+  paciente_id INT UNSIGNED NOT NULL,
+  fecha DATE NOT NULL,
+  diagnostico VARCHAR(200) NULL,
+  indicaciones VARCHAR(1000) NULL,
+  anulada TINYINT(1) NOT NULL DEFAULT 0,
+  anulada_en DATETIME NULL,
+  creado_en TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  KEY idx_recetas_paciente (paciente_id, fecha),
+  KEY idx_recetas_medico (medico_id, fecha),
+  KEY idx_recetas_turno (turno_id),
+  CONSTRAINT fk_recetas_turno FOREIGN KEY (turno_id) REFERENCES turnos (id) ON DELETE RESTRICT,
+  CONSTRAINT fk_recetas_medico FOREIGN KEY (medico_id) REFERENCES medicos (usuario_id) ON DELETE RESTRICT,
+  CONSTRAINT fk_recetas_paciente FOREIGN KEY (paciente_id) REFERENCES pacientes (usuario_id) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS receta_items (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  receta_id INT UNSIGNED NOT NULL,
+  orden TINYINT UNSIGNED NOT NULL,
+  medicamento VARCHAR(150) NOT NULL,
+  presentacion VARCHAR(100) NULL,
+  dosis VARCHAR(150) NOT NULL,
+  cantidad VARCHAR(50) NULL,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_receta_items_orden (receta_id, orden),
+  CONSTRAINT fk_receta_items_receta FOREIGN KEY (receta_id) REFERENCES recetas (id) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+-- Día 15: ficha clínica. Nunca se pisa: cada cambio guarda una versión nueva.
+CREATE TABLE IF NOT EXISTS fichas (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  paciente_id INT UNSIGNED NOT NULL,
+  grupo_sanguineo VARCHAR(3) NULL,
+  alergias VARCHAR(500) NULL,
+  enfermedades VARCHAR(500) NULL,
+  medicacion VARCHAR(500) NULL,
+  antecedentes_personales VARCHAR(1000) NULL,
+  antecedentes_familiares VARCHAR(1000) NULL,
+  creado_por INT UNSIGNED NOT NULL,
+  creado_en TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  KEY idx_fichas_paciente (paciente_id, id),
+  CONSTRAINT fk_fichas_paciente FOREIGN KEY (paciente_id) REFERENCES pacientes (usuario_id) ON DELETE RESTRICT,
+  CONSTRAINT fk_fichas_autor FOREIGN KEY (creado_por) REFERENCES medicos (usuario_id) ON DELETE RESTRICT,
+  CONSTRAINT chk_fichas_grupo CHECK (grupo_sanguineo IS NULL OR grupo_sanguineo IN ('A+','A-','B+','B-','AB+','AB-','0+','0-'))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+-- Día 16: atención médica (una por turno). Al finalizarla queda cerrada: las correcciones van como notas.
+CREATE TABLE IF NOT EXISTS atenciones (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  turno_id INT UNSIGNED NOT NULL,
+  medico_id INT UNSIGNED NOT NULL,
+  paciente_id INT UNSIGNED NOT NULL,
+  motivo_consulta VARCHAR(300) NULL,
+  presion_sistolica SMALLINT UNSIGNED NULL,
+  presion_diastolica SMALLINT UNSIGNED NULL,
+  frecuencia_cardiaca SMALLINT UNSIGNED NULL,
+  temperatura DECIMAL(4,1) NULL,
+  saturacion TINYINT UNSIGNED NULL,
+  peso_kg DECIMAL(5,1) NULL,
+  talla_cm SMALLINT UNSIGNED NULL,
+  examen_fisico VARCHAR(2000) NULL,
+  diagnostico VARCHAR(300) NULL,
+  indicaciones VARCHAR(2000) NULL,
+  finalizada TINYINT(1) NOT NULL DEFAULT 0,
+  finalizada_en DATETIME NULL,
+  creado_en TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  actualizado_en DATETIME NULL,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_atenciones_turno (turno_id),
+  KEY idx_atenciones_paciente (paciente_id, id),
+  CONSTRAINT fk_atenciones_turno FOREIGN KEY (turno_id) REFERENCES turnos (id) ON DELETE RESTRICT,
+  CONSTRAINT fk_atenciones_medico FOREIGN KEY (medico_id) REFERENCES medicos (usuario_id) ON DELETE RESTRICT,
+  CONSTRAINT fk_atenciones_paciente FOREIGN KEY (paciente_id) REFERENCES pacientes (usuario_id) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS atencion_notas (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  atencion_id INT UNSIGNED NOT NULL,
+  texto VARCHAR(1000) NOT NULL,
+  creado_por INT UNSIGNED NOT NULL,
+  creado_en TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  KEY idx_atencion_notas (atencion_id),
+  CONSTRAINT fk_atencion_notas_atencion FOREIGN KEY (atencion_id) REFERENCES atenciones (id) ON DELETE RESTRICT,
+  CONSTRAINT fk_atencion_notas_autor FOREIGN KEY (creado_por) REFERENCES medicos (usuario_id) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+-- Día 19: al cambiar la contraseña se cierran las sesiones abiertas en otros dispositivos
+-- (guarda el momento del cambio en segundos; los ingresos anteriores dejan de valer)
+ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS sesiones_desde INT UNSIGNED NOT NULL DEFAULT 0;

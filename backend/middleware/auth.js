@@ -17,7 +17,7 @@ function crearVerificador(permitirCambioPendiente) {
 
     try {
       const [filas] = await pool.query(
-        `SELECT id, dni, nombre, apellido, email, rol, activo, debe_cambiar_clave
+        `SELECT id, dni, nombre, apellido, email, rol, activo, debe_cambiar_clave, sesiones_desde
          FROM usuarios WHERE id = ?`,
         [datos.id]
       );
@@ -26,10 +26,15 @@ function crearVerificador(permitirCambioPendiente) {
       if (!usuario || !usuario.activo) {
         return res.status(401).json({ codigo: 'SESION_INVALIDA', error: 'Tu cuenta no está activa. Consultá en la secretaría.' });
       }
+      // La contraseña cambió después de este ingreso: la sesión ya no vale
+      if (datos.iat < usuario.sesiones_desde) {
+        return res.status(401).json({ codigo: 'SESION_INVALIDA', error: 'Tu contraseña cambió. Volvé a ingresar.' });
+      }
       if (usuario.debe_cambiar_clave && !permitirCambioPendiente) {
         return res.status(403).json({ codigo: 'CAMBIAR_CLAVE', error: 'Tenés que cambiar tu contraseña antes de continuar' });
       }
 
+      delete usuario.sesiones_desde;
       req.usuario = usuario;
       next();
     } catch (error) {

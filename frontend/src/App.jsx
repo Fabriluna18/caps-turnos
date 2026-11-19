@@ -7,7 +7,6 @@ import Atencion from './pages/Atencion';
 import CambiarClave from './pages/CambiarClave';
 import Confirmar from './pages/Confirmar';
 import Horarios from './pages/Horarios';
-import Inicio from './pages/Inicio';
 import InicioMedico from './pages/InicioMedico';
 import InicioPaciente from './pages/InicioPaciente';
 import InicioSecretaria from './pages/InicioSecretaria';
@@ -69,7 +68,7 @@ export default function App() {
         />
 
         {Object.entries(MENUS).map(([rol, opciones]) => {
-          const Portada = INICIOS[rol] || Inicio;
+          const Portada = INICIOS[rol];
           return (
             <Route
               key={rol}

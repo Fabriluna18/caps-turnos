@@ -29,6 +29,8 @@ export default function CambiarClave() {
         method: 'POST',
         body: JSON.stringify({ actual: form.actual, nueva: form.nueva }),
       });
+      // Al cambiar la clave se cierran las otras sesiones; esta recibe un ingreso nuevo
+      if (r.token) localStorage.setItem('token', r.token);
       localStorage.setItem('usuario', JSON.stringify(r.usuario));
       navigate(`/${r.usuario.rol}`);
     } catch (err) {
