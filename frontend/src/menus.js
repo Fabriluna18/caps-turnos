@@ -10,7 +10,7 @@ export const MENUS = {
     { a: 'horarios', texto: 'Horarios', icono: Clock, dia: 5 },
     { a: 'pacientes', texto: 'Pacientes', icono: Users, dia: 6 },
     { a: 'turnos', texto: 'Turnos', icono: CalendarDays, dia: 8 },
-    { a: 'reportes', texto: 'Reportes', icono: BarChart3, dia: 17 },
+    { a: 'reportes', texto: 'Reportes', icono: BarChart3 },
     { a: 'perfil', texto: 'Mi perfil', icono: UserCircle },
   ],
   medico: [

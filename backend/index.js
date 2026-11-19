@@ -17,6 +17,7 @@ const medicoPacientesRoutes = require('./routes/medico-pacientes');
 const atencionRoutes = require('./routes/atencion');
 const pacienteFichaRoutes = require('./routes/paciente-ficha');
 const recetaRoutes = require('./routes/recetas');
+const reporteRoutes = require('./routes/reportes');
 const perfilRoutes = require('./routes/perfil');
 const { iniciarRecordatorios } = require('./recordatorios');
 
@@ -53,6 +54,7 @@ app.use('/api/medico/pacientes', medicoPacientesRoutes);
 app.use('/api/medico/atencion', atencionRoutes);
 app.use('/api/medico', medicoPortalRoutes);
 app.use('/api/recetas', recetaRoutes);
+app.use('/api/reportes', reporteRoutes);
 app.use('/api/perfil', perfilRoutes);
 
 // Ruta de prueba de la conexión (la sacamos antes de publicar)

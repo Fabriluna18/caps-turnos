@@ -22,6 +22,7 @@ import Perfil from './pages/Perfil';
 import Proximamente from './pages/Proximamente';
 import RecetaVer from './pages/RecetaVer';
 import Recetas from './pages/Recetas';
+import Reportes from './pages/Reportes';
 import Restablecer from './pages/Restablecer';
 import SacarTurnoPaciente from './pages/SacarTurnoPaciente';
 import Turnos from './pages/Turnos';
@@ -32,6 +33,7 @@ const PAGINAS = {
   'secretaria/horarios': Horarios,
   'secretaria/pacientes': Pacientes,
   'secretaria/turnos': Turnos,
+  'secretaria/reportes': Reportes,
   'secretaria/perfil': Perfil,
   'medico/agenda': AgendaMedico,
   'medico/recetas': Recetas,
