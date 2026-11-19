@@ -10,6 +10,7 @@ import Horarios from './pages/Horarios';
 import Inicio from './pages/Inicio';
 import InicioMedico from './pages/InicioMedico';
 import InicioPaciente from './pages/InicioPaciente';
+import InicioSecretaria from './pages/InicioSecretaria';
 import Login from './pages/Login';
 import Medicos from './pages/Medicos';
 import MiFicha from './pages/MiFicha';
@@ -51,7 +52,7 @@ const PAGINAS = {
 // Pantallas que no están en el menú (se llega desde otra)
 const EXTRAS = { medico: [{ ruta: 'atencion/:turnoId', Pagina: Atencion }] };
 
-const INICIOS = { medico: InicioMedico, paciente: InicioPaciente };
+const INICIOS = { secretaria: InicioSecretaria, medico: InicioMedico, paciente: InicioPaciente };
 
 export default function App() {
   return (

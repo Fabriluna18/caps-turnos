@@ -51,4 +51,16 @@ async function proximoTurnoLibre(conexion, medicoId) {
   return proximoLibre(datos, hoy);
 }
 
-module.exports = { medicoActivo, disponibilidadDelDia, disponibilidadDelMes, proximoTurnoLibre };
+// Varios días seguidos de un médico (para el calendario semanal): fecha -> { motivo, libres, total }
+async function disponibilidadDeRango(conexion, medicoId, desde, hasta) {
+  const datos = await cargarDatos(conexion, medicoId, desde, hasta);
+  const a = ahora();
+  const dias = {};
+  for (let f = desde; f <= hasta; f = sumarDias(f, 1)) {
+    const d = calcularDia(datos, f, a);
+    dias[f] = { motivo: d.motivo, libres: d.turnos.filter((t) => t.libre).length, total: d.turnos.length };
+  }
+  return dias;
+}
+
+module.exports = { medicoActivo, disponibilidadDelDia, disponibilidadDelMes, proximoTurnoLibre, disponibilidadDeRango };
