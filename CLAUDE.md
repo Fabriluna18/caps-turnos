@@ -79,18 +79,16 @@ Variables del `.env`: `DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_NAME, JWT_SECR
 
 Días hechos: 1–3 base, login y recuperación · 4 médicos · 5 horarios, licencias y feriados · 6 pacientes · 7 disponibilidad · 8 reservas + "nada se borra" · 9 portal del paciente · 10 el paciente saca turno + recordatorio por mail · 11 Mis turnos · 12 agenda del médico · 13 recetas · 14 inicio del médico + historial · 15 ficha clínica · 16 pantalla de atención · 17 reportes · 18 inicio de la secretaría + calendario semanal · 19 seguridad y prueba de permisos · 20 datos de ejemplo · 21 diseño final.
 
-Primero, revisar con `git log --oneline` y `git status` que los días 19, 20 y 21 estén commiteados y mergeados a `develop` (Fabri no lo confirmó).
+Después del 21, ya en `develop`: ficha del paciente en ventana flotante y pantallas más cortas en el celular.
 
-## Lo que falta: Día 22 (instalación y cierre)
+## Día 22 (instalación y cierre)
 
-En una PC nueva hay que instalar antes XAMPP (MySQL + phpMyAdmin + Apache), Node.js LTS y Git (o copiar la carpeta sin `node_modules` ni `.env`).
+Hecho: `instalar.bat` (dependencias, build, `.env` con claves al azar y `JWT_SECRET` largo, base, `caps_app` + `permisos.sql`, datos demo; si es "instalación definitiva" todas las cuentas deben cambiar la clave), `iniciar.bat` (Express sirve `frontend/dist`, un solo proceso en el puerto 3001), `copia-seguridad.bat` (`mysqldump` a `copias/`), README. `.gitattributes` fuerza CRLF en los `.bat` (también en el `.zip` de GitHub).
 
-1. **Script de instalación** que cree la base, el usuario `caps_app` con sus permisos (sin DELETE/DROP salvo `especialidades`), corra `schema.sql` y cargue los datos (`demo` y, si se quiere, `demo:completo`).
-2. **Arranque con doble clic** (`.bat` de Windows). Idea: compilar el frontend (`npm run build`) y que Express sirva `frontend/dist`, así corre un solo proceso. MySQL de XAMPP se inicia aparte.
-3. **Copia de seguridad**: script con el `mysqldump` de XAMPP a una carpeta con la fecha.
-4. **Gmail real**: cuenta dedicada + contraseña de aplicación → `SMTP_HOST=smtp.gmail.com`, `SMTP_PORT=465`, `SMTP_USER`, `SMTP_PASS`, `MAIL_FROM`. Probar recuperación de clave y recordatorio.
-5. **Cambiar las claves de las cuentas demo** y poner un `JWT_SECRET` largo al instalar.
-6. **README** con instalación y uso; merge final `develop` → `main` y tag de versión.
+Falta:
+- Probar `instalar.bat` + `iniciar.bat` desde un `.zip` de la rama `develop` bajado de GitHub. Ojo: si el `.zip` crea un `.env` nuevo, el instalador le cambia la clave a `caps_app`, y el `backend/.env` de la carpeta de desarrollo deja de andar hasta copiarle el `DB_PASSWORD` nuevo.
+- Gmail real (cuenta dedicada + contraseña de aplicación en el `.env`) y probar la recuperación de clave y el recordatorio.
+- **No mergear a `main` ni poner tag hasta que Fabri lo diga** (quiere seguir sumando ideas en `develop`).
 
 ## Decisiones abiertas y notas
 
