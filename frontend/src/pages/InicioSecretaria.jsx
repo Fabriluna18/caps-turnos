@@ -46,7 +46,7 @@ export default function InicioSecretaria() {
 
       {r && (
         <>
-          <div className="dato-cards">
+          <div className="dato-cards compactas">
             <div className="dato-card principal" style={tarjeta}>
               <span className="dato-titulo">Turnos de hoy</span>
               <strong className="dato-grande">{r.hoy.turnos}</strong>
@@ -89,7 +89,7 @@ export default function InicioSecretaria() {
               <p className="suave">Hoy no atiende ningún médico.</p>
             ) : (
               <div style={{ overflowX: 'auto' }}>
-                <table className="tabla">
+                <table className="tabla numeros">
                   <thead>
                     <tr><th>Médico</th><th>Turnos</th><th>Atendidos</th><th>Sin confirmar</th><th>Libres</th></tr>
                   </thead>
@@ -102,10 +102,10 @@ export default function InicioSecretaria() {
                           {m.en_atencion > 0 && <span className="estado en_atencion">Atendiendo</span>}
                           {m.motivo === 'licencia' && <span className="estado cancelado">De licencia</span>}
                         </td>
-                        <td>{m.turnos}</td>
-                        <td>{m.atendidos}</td>
-                        <td>{m.sin_confirmar}</td>
-                        <td>{m.libres}</td>
+                        <td data-etiqueta="Turnos">{m.turnos}</td>
+                        <td data-etiqueta="Atendidos">{m.atendidos}</td>
+                        <td data-etiqueta="Sin confirmar">{m.sin_confirmar}</td>
+                        <td data-etiqueta="Libres">{m.libres}</td>
                       </tr>
                     ))}
                   </tbody>

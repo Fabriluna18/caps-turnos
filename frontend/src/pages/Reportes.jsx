@@ -123,12 +123,12 @@ export default function Reportes() {
       {error && <p className="error" role="alert">{error}</p>}
 
       <div className="panel">
-        <div className="acciones" style={{ marginTop: 0 }}>
+        <div className="acciones desliza" style={{ marginTop: 0 }}>
           {RAPIDOS.map(([tipo, texto]) => (
             <button key={tipo} className="boton-chico secundario" onClick={() => usarRapido(tipo)}>{texto}</button>
           ))}
         </div>
-        <form className="filtros" style={{ flexWrap: 'wrap', alignItems: 'flex-end' }} onSubmit={(e) => { e.preventDefault(); generar(filtros); }}>
+        <form className="filtros de-a-dos" style={{ flexWrap: 'wrap', alignItems: 'flex-end' }} onSubmit={(e) => { e.preventDefault(); generar(filtros); }}>
           <label className="campo">
             Desde
             <input type="date" value={filtros.desde} onChange={(e) => cambiar('desde', e.target.value)} required />
@@ -168,7 +168,7 @@ export default function Reportes() {
             Del {formatoFecha(r.desde)} al {formatoFecha(r.hasta)} · {r.meses} {r.meses === 1 ? 'mes' : 'meses'}
           </p>
 
-          <div className="dato-cards">
+          <div className="dato-cards compactas">
             <div className="dato-card principal" style={tarjeta}>
               <span className="dato-titulo">Pacientes atendidos</span>
               <strong className="dato-grande">{r.totales.atendidos}</strong>
@@ -233,11 +233,16 @@ export default function Reportes() {
                 <p className="leyenda">Pasá el mouse por una barra para ver el número. El mes más alto: {Math.max(...r.por_mes.map((m) => m.atendidos))} atendidos.</p>
               </div>
             ) : (
-              <table className="tabla">
+              <table className="tabla numeros">
                 <thead><tr><th>Mes</th><th>Atendidos</th><th>Ausentes</th><th>Cancelados</th></tr></thead>
                 <tbody>
                   {r.por_mes.map((m) => (
-                    <tr key={m.mes}><td>{nombreMes(m.mes)}</td><td>{m.atendidos}</td><td>{m.ausentes}</td><td>{m.cancelados}</td></tr>
+                    <tr key={m.mes}>
+                      <td>{nombreMes(m.mes)}</td>
+                      <td data-etiqueta="Atendidos">{m.atendidos}</td>
+                      <td data-etiqueta="Ausentes">{m.ausentes}</td>
+                      <td data-etiqueta="Cancelados">{m.cancelados}</td>
+                    </tr>
                   ))}
                 </tbody>
               </table>
@@ -247,7 +252,7 @@ export default function Reportes() {
           <div className="panel">
             <h2>Por médico</h2>
             <div style={{ overflowX: 'auto' }}>
-              <table className="tabla">
+              <table className="tabla numeros">
                 <thead>
                   <tr><th>Médico</th><th style={{ minWidth: 160 }}>Atendidos</th><th>Pacientes</th><th>Ausentes</th><th>Cancelados</th><th>Prom. mensual</th></tr>
                 </thead>
@@ -258,7 +263,7 @@ export default function Reportes() {
                         <strong>{m.apellido}, {m.nombre}</strong>
                         <div className="suave">{m.especialidad}{m.activo ? '' : ' · de baja'}</div>
                       </td>
-                      <td>
+                      <td className="completa" data-etiqueta="Atendidos">
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                           <div style={{ flex: 1, height: 8, background: 'var(--color-fondo, #f4f6fb)', borderRadius: 4 }}>
                             <div style={{ width: `${(m.atendidos / maxMedico) * 100}%`, height: 8, background: 'var(--color-primario, #1d4ed8)', borderRadius: 4 }} />
@@ -266,19 +271,19 @@ export default function Reportes() {
                           <strong style={{ minWidth: 28, textAlign: 'right' }}>{m.atendidos}</strong>
                         </div>
                       </td>
-                      <td>{m.pacientes}</td>
-                      <td>{m.ausentes}</td>
-                      <td>{m.cancelados}</td>
-                      <td>{numero(m.promedio_mensual)}</td>
+                      <td data-etiqueta="Pacientes">{m.pacientes}</td>
+                      <td data-etiqueta="Ausentes">{m.ausentes}</td>
+                      <td data-etiqueta="Cancelados">{m.cancelados}</td>
+                      <td data-etiqueta="Prom. mensual">{numero(m.promedio_mensual)}</td>
                     </tr>
                   ))}
                   <tr>
                     <td><strong>Total</strong></td>
-                    <td><strong>{r.totales.atendidos}</strong></td>
-                    <td><strong>{r.totales.pacientes}</strong></td>
-                    <td><strong>{r.totales.ausentes}</strong></td>
-                    <td><strong>{r.totales.cancelados}</strong></td>
-                    <td><strong>{numero(r.totales.promedio_mensual)}</strong></td>
+                    <td className="completa" data-etiqueta="Atendidos"><strong>{r.totales.atendidos}</strong></td>
+                    <td data-etiqueta="Pacientes"><strong>{r.totales.pacientes}</strong></td>
+                    <td data-etiqueta="Ausentes"><strong>{r.totales.ausentes}</strong></td>
+                    <td data-etiqueta="Cancelados"><strong>{r.totales.cancelados}</strong></td>
+                    <td data-etiqueta="Prom. mensual"><strong>{numero(r.totales.promedio_mensual)}</strong></td>
                   </tr>
                 </tbody>
               </table>
@@ -292,14 +297,14 @@ export default function Reportes() {
           {r.por_especialidad.length > 1 && (
             <div className="panel">
               <h2>Por especialidad</h2>
-              <table className="tabla">
+              <table className="tabla numeros">
                 <thead><tr><th>Especialidad</th><th>Atendidos</th><th>% del total</th></tr></thead>
                 <tbody>
                   {r.por_especialidad.map((e) => (
                     <tr key={e.id}>
                       <td>{e.nombre}</td>
-                      <td>{e.atendidos}</td>
-                      <td>{numero(Math.round((e.atendidos * 1000) / r.totales.atendidos) / 10)}%</td>
+                      <td data-etiqueta="Atendidos">{e.atendidos}</td>
+                      <td data-etiqueta="% del total">{numero(Math.round((e.atendidos * 1000) / r.totales.atendidos) / 10)}%</td>
                     </tr>
                   ))}
                 </tbody>

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Eye, KeyRound, Pencil, Search, UserCheck, UserX } from 'lucide-react';
+import { Eye, KeyRound, Pencil, Search, UserCheck, UserPlus, UserX } from 'lucide-react';
 import { apiFetch } from '../api/client';
 import { mensajeDeError } from '../api/errores';
 import ClaveTemporal from '../components/ClaveTemporal';
@@ -19,6 +19,7 @@ export default function Pacientes() {
   const [pagina, setPagina] = useState(1);
   const [version, setVersion] = useState(0);
   const [form, setForm] = useState(VACIO);
+  const [formAbierto, setFormAbierto] = useState(false);
   const [editando, setEditando] = useState(null);
   const [ficha, setFicha] = useState(null);
   const [clave, setClave] = useState(null);
@@ -59,14 +60,25 @@ export default function Pacientes() {
 
   const cambiar = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
-  const cancelarEdicion = () => {
+  const cerrarFormulario = () => {
+    setFormAbierto(false);
     setEditando(null);
     setForm(VACIO);
+    setError('');
+  };
+
+  const nuevo = () => {
+    limpiarMensajes();
+    setClave(null);
+    setEditando(null);
+    setForm(VACIO);
+    setFormAbierto(true);
   };
 
   const editar = (p) => {
     limpiarMensajes();
     setClave(null);
+    setFicha(null);
     setEditando(p.id);
     setForm({
       dni: p.dni,
@@ -79,7 +91,7 @@ export default function Pacientes() {
       localidad: p.localidad || '',
       cobertura: p.cobertura || '',
     });
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    setFormAbierto(true);
   };
 
   const guardar = async (e) => {
@@ -89,17 +101,17 @@ export default function Pacientes() {
     setGuardando(true);
     try {
       if (editando) {
-        const r = await apiFetch(`/pacientes/${editando}`, { method: 'PUT', body: JSON.stringify(form) });
-        if (ficha && ficha.id === editando) setFicha(r.paciente);
+        await apiFetch(`/pacientes/${editando}`, { method: 'PUT', body: JSON.stringify(form) });
+        cerrarFormulario();
         setOk('Datos actualizados');
       } else {
         const r = await apiFetch('/pacientes', { method: 'POST', body: JSON.stringify(form) });
+        cerrarFormulario();
         setClave({ nombre: `${r.paciente.nombre} ${r.paciente.apellido}`, valor: r.clave_temporal });
       }
-      cancelarEdicion();
       recargar();
     } catch (err) {
-      setError(mensajeDeError(err));
+      setError(mensajeDeError(err)); // se muestra dentro de la ventana, que queda abierta
     } finally {
       setGuardando(false);
     }
@@ -107,6 +119,7 @@ export default function Pacientes() {
 
   const cambiarEstado = async (p) => {
     limpiarMensajes();
+    setFicha(null);
     try {
       await apiFetch(`/pacientes/${p.id}/estado`, { method: 'PUT', body: JSON.stringify({ activo: !p.activo }) });
       setOk(`${p.nombre} ${p.apellido} ${p.activo ? 'quedó dado de baja' : 'fue reactivado'}`);
@@ -119,6 +132,7 @@ export default function Pacientes() {
   const nuevaClave = async (p) => {
     if (!window.confirm(`¿Generar una clave temporal nueva para ${p.nombre} ${p.apellido}? La anterior deja de funcionar.`)) return;
     limpiarMensajes();
+    setFicha(null);
     try {
       const r = await apiFetch(`/pacientes/${p.id}/reset-clave`, { method: 'POST' });
       setClave({ nombre: `${p.nombre} ${p.apellido}`, valor: r.clave_temporal });
@@ -127,15 +141,17 @@ export default function Pacientes() {
     }
   };
 
-
   const totalPaginas = Math.max(1, Math.ceil(datos.total / datos.por_pagina));
   const desde = datos.total === 0 ? 0 : (datos.pagina - 1) * datos.por_pagina + 1;
   const hasta = Math.min(datos.total, datos.pagina * datos.por_pagina);
 
   return (
     <>
-      <h1>Pacientes</h1>
-      {error && <p className="error" role="alert">{error}</p>}
+      <div className="titulo-pagina">
+        <h1>Pacientes</h1>
+        <button className="boton" onClick={nuevo}><UserPlus size={18} /> Nuevo paciente</button>
+      </div>
+      {error && !formAbierto && <p className="error" role="alert">{error}</p>}
       {ok && <p className="exito" role="status">{ok}</p>}
 
       {clave && <ClaveTemporal nombre={clave.nombre} valor={clave.valor} onCerrar={() => setClave(null)} />}
@@ -159,72 +175,79 @@ export default function Pacientes() {
             <div><dt>Cobertura</dt><dd>{ficha.cobertura || '-'}</dd></div>
             <div><dt>Estado</dt><dd>{ficha.activo ? 'Activo' : 'De baja'}</dd></div>
           </dl>
+          <div className="acciones">
+            <button className="boton-chico" onClick={() => editar(ficha)}><Pencil size={14} /> Editar</button>
+            <button className="boton-chico" onClick={() => cambiarEstado(ficha)}>
+              {ficha.activo ? <><UserX size={14} /> Dar de baja</> : <><UserCheck size={14} /> Reactivar</>}
+            </button>
+            <button className="boton-chico" onClick={() => nuevaClave(ficha)}><KeyRound size={14} /> Nueva clave</button>
+          </div>
         </VentanaFlotante>
       )}
 
-      <div className="panel">
-        <h2>{editando ? 'Editar paciente' : 'Nuevo paciente'}</h2>
-        <form onSubmit={guardar}>
-          <div className="grilla-form">
-            <label className="campo">
-              DNI
-              <input
-                name="dni" value={form.dni} onChange={cambiar} inputMode="numeric"
-                maxLength={10} disabled={Boolean(editando)} required
-              />
-            </label>
-            <label className="campo">
-              Nombre
-              <input name="nombre" value={form.nombre} onChange={cambiar} maxLength={80} required />
-            </label>
-            <label className="campo">
-              Apellido
-              <input name="apellido" value={form.apellido} onChange={cambiar} maxLength={80} required />
-            </label>
-            <label className="campo">
-              Fecha de nacimiento
-              <input
-                name="fecha_nacimiento" type="date" value={form.fecha_nacimiento} onChange={cambiar}
-                min="1900-01-01" max={hoyISO()} required
-              />
-            </label>
-            <label className="campo">
-              Teléfono (opcional)
-              <input name="telefono" value={form.telefono} onChange={cambiar} maxLength={30} />
-            </label>
-            <label className="campo">
-              Email (opcional)
-              <input name="email" type="email" value={form.email} onChange={cambiar} maxLength={150} />
-            </label>
-            <label className="campo">
-              Dirección (opcional)
-              <input name="direccion" value={form.direccion} onChange={cambiar} maxLength={150} />
-            </label>
-            <label className="campo">
-              Localidad (opcional)
-              <input name="localidad" value={form.localidad} onChange={cambiar} maxLength={80} />
-            </label>
-            <label className="campo">
-              Cobertura (opcional)
-              <input name="cobertura" list="coberturas" value={form.cobertura} onChange={cambiar} maxLength={80} />
-              <datalist id="coberturas">
-                <option value="Sin cobertura" />
-                <option value="PAMI" />
-                <option value="Obra social" />
-                <option value="Prepaga" />
-              </datalist>
-            </label>
-          </div>
-          <div className="acciones">
-            <button className="boton" type="submit" disabled={guardando}>
-              {guardando ? 'Guardando...' : editando ? 'Guardar cambios' : 'Agregar paciente'}
-            </button>
-            {editando && (
-              <button className="boton secundario" type="button" onClick={cancelarEdicion}>Cancelar</button>
-            )}
-          </div>
-        </form>
-      </div>
+      {formAbierto && (
+        <VentanaFlotante titulo={editando ? 'Editar paciente' : 'Nuevo paciente'} onCerrar={cerrarFormulario}>
+          {error && <p className="error" role="alert">{error}</p>}
+          <form onSubmit={guardar}>
+            <div className="grilla-form">
+              <label className="campo">
+                DNI
+                <input
+                  name="dni" value={form.dni} onChange={cambiar} inputMode="numeric"
+                  maxLength={10} disabled={Boolean(editando)} required
+                />
+              </label>
+              <label className="campo">
+                Nombre
+                <input name="nombre" value={form.nombre} onChange={cambiar} maxLength={80} required />
+              </label>
+              <label className="campo">
+                Apellido
+                <input name="apellido" value={form.apellido} onChange={cambiar} maxLength={80} required />
+              </label>
+              <label className="campo">
+                Fecha de nacimiento
+                <input
+                  name="fecha_nacimiento" type="date" value={form.fecha_nacimiento} onChange={cambiar}
+                  min="1900-01-01" max={hoyISO()} required
+                />
+              </label>
+              <label className="campo">
+                Teléfono (opcional)
+                <input name="telefono" value={form.telefono} onChange={cambiar} maxLength={30} />
+              </label>
+              <label className="campo">
+                Email (opcional)
+                <input name="email" type="email" value={form.email} onChange={cambiar} maxLength={150} />
+              </label>
+              <label className="campo">
+                Dirección (opcional)
+                <input name="direccion" value={form.direccion} onChange={cambiar} maxLength={150} />
+              </label>
+              <label className="campo">
+                Localidad (opcional)
+                <input name="localidad" value={form.localidad} onChange={cambiar} maxLength={80} />
+              </label>
+              <label className="campo">
+                Cobertura (opcional)
+                <input name="cobertura" list="coberturas" value={form.cobertura} onChange={cambiar} maxLength={80} />
+                <datalist id="coberturas">
+                  <option value="Sin cobertura" />
+                  <option value="PAMI" />
+                  <option value="Obra social" />
+                  <option value="Prepaga" />
+                </datalist>
+              </label>
+            </div>
+            <div className="acciones">
+              <button className="boton" type="submit" disabled={guardando}>
+                {guardando ? 'Guardando...' : editando ? 'Guardar cambios' : 'Agregar paciente'}
+              </button>
+              <button className="boton secundario" type="button" onClick={cerrarFormulario}>Cancelar</button>
+            </div>
+          </form>
+        </VentanaFlotante>
+      )}
 
       <div className="panel">
         <h2>Pacientes registrados</h2>
@@ -270,19 +293,27 @@ export default function Pacientes() {
                 <tbody>
                   {datos.items.map((p) => (
                     <tr key={p.id} className={p.activo ? '' : 'fila-baja'}>
-                      <td><strong>{p.apellido}, {p.nombre}</strong><div className="suave">DNI {p.dni}</div></td>
-                      <td>{p.fecha_nacimiento ? `${edad(p.fecha_nacimiento)} años` : '-'}</td>
-                      <td>{p.telefono || '-'}<div className="suave">{p.email || 'Sin email'}</div></td>
-                      <td>{p.cobertura || '-'}</td>
-                      <td><span className={`etiqueta ${p.activo ? 'activo' : 'baja'}`}>{p.activo ? 'Activo' : 'De baja'}</span></td>
                       <td>
+                        <strong>{p.apellido}, {p.nombre}</strong>
+                        <div className="suave">
+                          DNI {p.dni}
+                          {/* En el celular la edad va acá, en lugar de su propia columna */}
+                          {p.fecha_nacimiento && <span className="solo-celu"> · {edad(p.fecha_nacimiento)} años</span>}
+                        </div>
+                      </td>
+                      <td className="solo-compu">{p.fecha_nacimiento ? `${edad(p.fecha_nacimiento)} años` : '-'}</td>
+                      <td>{p.telefono || '-'}<div className="suave">{p.email || 'Sin email'}</div></td>
+                      <td className="solo-compu">{p.cobertura || '-'}</td>
+                      <td className="en-linea-celu"><span className={`etiqueta ${p.activo ? 'activo' : 'baja'}`}>{p.activo ? 'Activo' : 'De baja'}</span></td>
+                      <td className="en-linea-celu">
                         <div className="acciones-fila">
                           <button className="boton-chico" onClick={() => setFicha(p)}><Eye size={14} /> Ver ficha</button>
-                          <button className="boton-chico" onClick={() => editar(p)}><Pencil size={14} /> Editar</button>
-                          <button className="boton-chico" onClick={() => cambiarEstado(p)}>
+                          {/* En el celular estas tres están dentro de "Ver ficha" */}
+                          <button className="boton-chico solo-compu" onClick={() => editar(p)}><Pencil size={14} /> Editar</button>
+                          <button className="boton-chico solo-compu" onClick={() => cambiarEstado(p)}>
                             {p.activo ? <><UserX size={14} /> Dar de baja</> : <><UserCheck size={14} /> Reactivar</>}
                           </button>
-                          <button className="boton-chico" onClick={() => nuevaClave(p)}><KeyRound size={14} /> Nueva clave</button>
+                          <button className="boton-chico solo-compu" onClick={() => nuevaClave(p)}><KeyRound size={14} /> Nueva clave</button>
                         </div>
                       </td>
                     </tr>

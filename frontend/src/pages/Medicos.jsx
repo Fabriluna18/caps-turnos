@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
-import { KeyRound, Pencil, UserCheck, UserX } from 'lucide-react';
+import { KeyRound, Pencil, UserCheck, UserPlus, UserX } from 'lucide-react';
 import { apiFetch } from '../api/client';
 import { mensajeDeError } from '../api/errores';
 import Especialidades from '../components/Especialidades';
+import VentanaFlotante from '../components/VentanaFlotante';
 
 const VACIO = { dni: '', nombre: '', apellido: '', email: '', telefono: '', matricula: '', especialidad_id: '' };
 
@@ -11,6 +12,7 @@ export default function Medicos() {
   const [especialidades, setEspecialidades] = useState([]);
   const [form, setForm] = useState(VACIO);
   const [editando, setEditando] = useState(null);
+  const [formAbierto, setFormAbierto] = useState(false);
   const [clave, setClave] = useState(null);
   const [copiada, setCopiada] = useState(false);
   const [cargando, setCargando] = useState(false);
@@ -43,14 +45,25 @@ export default function Medicos() {
     setOk('');
   };
 
-  const cancelarEdicion = () => {
+  const cerrarFormulario = () => {
+    setFormAbierto(false);
     setEditando(null);
     setForm(VACIO);
+    setError('');
+  };
+
+  const nuevo = () => {
+    limpiarMensajes();
+    setClave(null);
+    setEditando(null);
+    setForm(VACIO);
+    setFormAbierto(true);
   };
 
   const editar = (m) => {
     limpiarMensajes();
     setClave(null);
+    setFormAbierto(true);
     setEditando(m.id);
     setForm({
       dni: m.dni,
@@ -61,7 +74,6 @@ export default function Medicos() {
       matricula: m.matricula,
       especialidad_id: String(m.especialidad_id),
     });
-    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const guardar = async (e) => {
@@ -72,16 +84,17 @@ export default function Medicos() {
     try {
       if (editando) {
         await apiFetch(`/medicos/${editando}`, { method: 'PUT', body: JSON.stringify(form) });
+        cerrarFormulario();
         setOk('Datos actualizados');
       } else {
         const r = await apiFetch('/medicos', { method: 'POST', body: JSON.stringify(form) });
+        cerrarFormulario();
         setClave({ nombre: `${r.medico.nombre} ${r.medico.apellido}`, valor: r.clave_temporal });
         setCopiada(false);
       }
-      cancelarEdicion();
       await recargar();
     } catch (err) {
-      setError(mensajeDeError(err));
+      setError(mensajeDeError(err)); // se muestra dentro de la ventana, que queda abierta
     } finally {
       setCargando(false);
     }
@@ -122,8 +135,11 @@ export default function Medicos() {
 
   return (
     <>
-      <h1>Médicos</h1>
-      {error && <p className="error" role="alert">{error}</p>}
+      <div className="titulo-pagina">
+        <h1>Médicos</h1>
+        <button className="boton" onClick={nuevo}><UserPlus size={18} /> Nuevo médico</button>
+      </div>
+      {error && !formAbierto && <p className="error" role="alert">{error}</p>}
       {ok && <p className="exito" role="status">{ok}</p>}
 
       {clave && (
@@ -140,8 +156,9 @@ export default function Medicos() {
         </div>
       )}
 
-      <div className="panel">
-        <h2>{editando ? 'Editar médico' : 'Nuevo médico'}</h2>
+      {formAbierto && (
+        <VentanaFlotante titulo={editando ? 'Editar médico' : 'Nuevo médico'} onCerrar={cerrarFormulario}>
+        {error && <p className="error" role="alert">{error}</p>}
         <form onSubmit={guardar}>
           <div className="grilla-form">
             <label className="campo">
@@ -185,12 +202,11 @@ export default function Medicos() {
             <button className="boton" type="submit" disabled={cargando}>
               {cargando ? 'Guardando...' : editando ? 'Guardar cambios' : 'Agregar médico'}
             </button>
-            {editando && (
-              <button className="boton secundario" type="button" onClick={cancelarEdicion}>Cancelar</button>
-            )}
+            <button className="boton secundario" type="button" onClick={cerrarFormulario}>Cancelar</button>
           </div>
         </form>
-      </div>
+        </VentanaFlotante>
+      )}
 
       <div className="panel">
         <h2>Equipo médico ({medicos.length})</h2>
@@ -205,10 +221,15 @@ export default function Medicos() {
               <tbody>
                 {medicos.map((m) => (
                   <tr key={m.id} className={m.activo ? '' : 'fila-baja'}>
-                    <td><strong>{m.apellido}, {m.nombre}</strong><div className="suave">DNI {m.dni}</div></td>
-                    <td>{m.especialidad}</td>
-                    <td>{m.matricula}</td>
-                    <td>{m.email || '-'}<div className="suave">{m.telefono || ''}</div></td>
+                    <td>
+                      <strong>{m.apellido}, {m.nombre}</strong>
+                      <div className="suave">DNI {m.dni}</div>
+                      {/* En el celular especialidad y matrícula van acá, en una sola línea */}
+                      <div className="solo-celu">{m.especialidad} · Mat. {m.matricula}</div>
+                    </td>
+                    <td className="solo-compu">{m.especialidad}</td>
+                    <td className="solo-compu">{m.matricula}</td>
+                    <td className={m.email || m.telefono ? '' : 'solo-compu'}>{m.email || '-'}<div className="suave">{m.telefono || ''}</div></td>
                     <td><span className={`etiqueta ${m.activo ? 'activo' : 'baja'}`}>{m.activo ? 'Activo' : 'De baja'}</span></td>
                     <td>
                       <div className="acciones-fila">

@@ -638,4 +638,53 @@ body:has(.ventana[open]) { overflow: hidden; } /* la página de atrás no se mue
   .tabla:not(.grilla) td:empty { display: none; }
   .tabla:not(.grilla) td:first-child { font-size: 1rem; }
   .tabla:not(.grilla) tbody tr:hover { background: none; }
+
+  /* Tablas de números: el nombre arriba y cada número en su columna, con su título chiquito encima */
+  .tabla.numeros tr { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px 10px; }
+  .tabla.numeros td:not([data-etiqueta]), .tabla.numeros td.completa { grid-column: 1 / -1; }
+  .tabla.numeros td[data-etiqueta] { font-size: 1.05rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .tabla.numeros td[data-etiqueta]::before {
+    content: attr(data-etiqueta);
+    display: block;
+    margin-bottom: 2px;
+    font-size: 0.64rem;
+    font-weight: 650;
+    line-height: 1.2;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    color: var(--color-texto-suave);
+  }
+
+  /* Tarjetas de números de a dos (la principal ocupa todo el ancho) */
+  .dato-cards.compactas { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .dato-cards.compactas .dato-card { padding: 14px 16px; }
+  .dato-cards.compactas .dato-card.principal,
+  .dato-cards.compactas .dato-card:last-child:nth-child(2n) { grid-column: 1 / -1; } /* la última no queda sola a la mitad */
+  .dato-cards.compactas .dato-grande { font-size: 1.5rem; }
+  .dato-cards.compactas .dato-titulo { font-size: 0.7rem; }
+
+  /* Botones de las filas más chicos, para que entren en una sola línea */
+  .tabla .acciones-fila { gap: 5px; }
+  .tabla .acciones-fila .boton-chico { min-height: 36px; padding: 6px 8px; gap: 5px; font-size: 0.82rem; }
+
+  /* Celdas que van una al lado de la otra (por ejemplo "Activo" y "Ver ficha") */
+  .tabla:not(.grilla) td.en-linea-celu { display: inline-flex; width: auto; align-items: center; vertical-align: middle; margin-right: 8px; }
+
+  /* Atajos que se deslizan de costado en vez de ocupar varias líneas */
+  .desliza { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 4px; scrollbar-width: none; }
+  .desliza > * { flex-shrink: 0; }
+
+  /* Filtros de a dos por fila */
+  .filtros.de-a-dos > .campo { flex: 1 1 120px; min-width: 0; }
+  .filtros.de-a-dos input, .filtros.de-a-dos select { width: 100%; min-width: 0; }
+  .filtros.de-a-dos > .boton { flex: 1 1 100%; }
+
+  .solo-compu { display: none !important; }
 }
+@media (min-width: 640px) {
+  .solo-celu { display: none !important; }
+}
+
+/* Título de la pantalla con su botón principal al lado (por ejemplo "Nuevo paciente") */
+.titulo-pagina { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 18px; }
+.titulo-pagina h1 { margin: 0; }
