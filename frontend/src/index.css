@@ -109,6 +109,10 @@ input[type='checkbox'], input[type='radio'] { accent-color: var(--color-primario
 .exito { background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; }
 .info { background: #eff6ff; border: 1px solid #bfdbfe; color: #1e3a8a; margin-top: 16px; }
 .info strong { display: block; margin-bottom: 2px; }
+.error > svg, .exito > svg, .info > svg { flex-shrink: 0; } /* el ícono no se achica si el texto es largo */
+/* Un texto suave dentro de una fila de botones o chips no lleva margen (si no, queda más arriba que el resto) */
+.acciones > .suave, .paginacion .suave, .dias-chips > .suave { margin: 0; }
+.tabla td > .error { margin-bottom: 0; } /* aviso de alergias dentro de una fila */
 .aviso-dia { background: var(--color-aviso-fondo); border: 1px solid var(--color-aviso-borde); }
 
 /* ---------- Botones ---------- */
@@ -468,6 +472,7 @@ input[type='checkbox'], input[type='radio'] { accent-color: var(--color-primario
   white-space: nowrap;
 }
 .tabla td { padding: 12px 10px; border-bottom: 1px solid #eef2f6; vertical-align: top; }
+.tabla.numeros td { font-variant-numeric: tabular-nums; } /* los números quedan alineados en columna */
 .tabla tbody tr { transition: background-color 160ms ease; }
 .tabla tbody tr:hover { background: var(--color-superficie-2); }
 .tabla tbody tr:last-child td { border-bottom: 0; }
@@ -626,9 +631,9 @@ body:has(.ventana[open]) { overflow: hidden; } /* la página de atrás no se mue
   body { background: #fff; }
 }
 
-/* ---------- Celular: las tablas se leen como tarjetas apiladas ---------- */
-@media (max-width: 639px) {
-  .panel { padding: 16px; }
+/* ---------- Tableta y celular: las tablas se leen como tarjetas apiladas ----------
+   (en tableta las columnas no entraban y cada fila quedaba altísima con los botones uno abajo del otro) */
+@media (max-width: 1023px) {
   .tabla:not(.grilla) thead { display: none; }
   .tabla:not(.grilla), .tabla:not(.grilla) tbody, .tabla:not(.grilla) tr, .tabla:not(.grilla) td { display: block; width: 100%; }
   .tabla:not(.grilla) tr { padding: 12px 0; border-bottom: 1px solid var(--color-borde); }
@@ -654,6 +659,32 @@ body:has(.ventana[open]) { overflow: hidden; } /* la página de atrás no se mue
     color: var(--color-texto-suave);
   }
 
+  /* Botones de las filas más chicos, para que entren en una sola línea */
+  .tabla .acciones-fila { gap: 5px; }
+  .tabla .acciones-fila .boton-chico { min-height: 36px; padding: 6px 8px; gap: 5px; font-size: 0.82rem; }
+
+  /* Celdas que van una al lado de la otra (por ejemplo "Activo" y "Ver ficha") */
+  .tabla:not(.grilla) td.en-linea-celu { display: inline-flex; width: auto; align-items: center; vertical-align: middle; margin-right: 8px; }
+
+  .solo-compu { display: none !important; }
+}
+@media (min-width: 1024px) {
+  .solo-celu { display: none !important; }
+}
+
+/* Tableta: las tarjetas de las tablas van de a dos por fila */
+@media (min-width: 640px) and (max-width: 1023px) {
+  .tabla:not(.grilla) tbody { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 32px; }
+  .tabla:not(.grilla) tbody tr:nth-last-child(2):nth-child(odd) { border-bottom: 0; } /* la anteúltima, si queda en la última fila */
+  /* Tarjetas de números de a dos (si son impares, la última ocupa todo el ancho) */
+  .dato-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .dato-cards > .dato-card:last-child:nth-child(odd) { grid-column: 1 / -1; }
+}
+
+/* ---------- Solo celular ---------- */
+@media (max-width: 639px) {
+  .panel { padding: 16px; }
+
   /* Tarjetas de números de a dos (la principal ocupa todo el ancho) */
   .dato-cards.compactas { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
   .dato-cards.compactas .dato-card { padding: 14px 16px; }
@@ -661,13 +692,6 @@ body:has(.ventana[open]) { overflow: hidden; } /* la página de atrás no se mue
   .dato-cards.compactas .dato-card:last-child:nth-child(2n) { grid-column: 1 / -1; } /* la última no queda sola a la mitad */
   .dato-cards.compactas .dato-grande { font-size: 1.5rem; }
   .dato-cards.compactas .dato-titulo { font-size: 0.7rem; }
-
-  /* Botones de las filas más chicos, para que entren en una sola línea */
-  .tabla .acciones-fila { gap: 5px; }
-  .tabla .acciones-fila .boton-chico { min-height: 36px; padding: 6px 8px; gap: 5px; font-size: 0.82rem; }
-
-  /* Celdas que van una al lado de la otra (por ejemplo "Activo" y "Ver ficha") */
-  .tabla:not(.grilla) td.en-linea-celu { display: inline-flex; width: auto; align-items: center; vertical-align: middle; margin-right: 8px; }
 
   /* Atajos que se deslizan de costado en vez de ocupar varias líneas */
   .desliza { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 4px; scrollbar-width: none; }
@@ -677,11 +701,6 @@ body:has(.ventana[open]) { overflow: hidden; } /* la página de atrás no se mue
   .filtros.de-a-dos > .campo { flex: 1 1 120px; min-width: 0; }
   .filtros.de-a-dos input, .filtros.de-a-dos select { width: 100%; min-width: 0; }
   .filtros.de-a-dos > .boton { flex: 1 1 100%; }
-
-  .solo-compu { display: none !important; }
-}
-@media (min-width: 640px) {
-  .solo-celu { display: none !important; }
 }
 
 /* Título de la pantalla con su botón principal al lado (por ejemplo "Nuevo paciente") */

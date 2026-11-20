@@ -116,9 +116,11 @@ export default function MedicosPaciente() {
                   {abierto === m.id ? 'Ocultar horarios' : 'Ver horarios'}
                 </button>
               )}
-              <Link className="boton-chico" to={`/paciente/sacar-turno?medico=${m.id}`}>
-                <CalendarPlus size={14} /> Sacar turno
-              </Link>
+              {m.dias.length > 0 && (
+                <Link className="boton-chico" to={`/paciente/sacar-turno?medico=${m.id}`}>
+                  <CalendarPlus size={14} /> Sacar turno
+                </Link>
+              )}
             </div>
 
             {abierto === m.id && (

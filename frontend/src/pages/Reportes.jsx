@@ -237,7 +237,7 @@ export default function Reportes() {
                     <span key={m.mes} className="suave" style={{ flex: 1, textAlign: 'center', fontSize: 12, paddingTop: 6 }}>{nombreMes(m.mes)}</span>
                   ))}
                 </div>
-                <p className="leyenda">Pasá el mouse por una barra para ver el número. El mes más alto: {Math.max(...r.por_mes.map((m) => m.atendidos))} atendidos.</p>
+                <p className="leyenda"><span className="solo-compu">Pasá el mouse por una barra para ver el número. </span>El mes más alto: {Math.max(...r.por_mes.map((m) => m.atendidos))} atendidos.</p>
               </div>
             ) : (
               <table className="tabla numeros">

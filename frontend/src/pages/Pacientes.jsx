@@ -308,7 +308,7 @@ export default function Pacientes() {
                       <td className="en-linea-celu">
                         <div className="acciones-fila">
                           <button className="boton-chico" onClick={() => setFicha(p)}><Eye size={14} /> Ver ficha</button>
-                          {/* En el celular estas tres están dentro de "Ver ficha" */}
+                          {/* En celular y tableta estas tres están dentro de "Ver ficha" */}
                           <button className="boton-chico solo-compu" onClick={() => editar(p)}><Pencil size={14} /> Editar</button>
                           <button className="boton-chico solo-compu" onClick={() => cambiarEstado(p)}>
                             {p.activo ? <><UserX size={14} /> Dar de baja</> : <><UserCheck size={14} /> Reactivar</>}

@@ -102,7 +102,7 @@ export default function CalendarioSemanal() {
       )}
       <p className="leyenda">
         Cada casilla muestra los turnos reservados y cuántos horarios quedan libres. "—" es un día en que el médico no atiende.
-        Pasá el mouse para ver el detalle.
+        <span className="solo-compu">Pasá el mouse para ver el detalle.</span>
       </p>
     </div>
   );

@@ -108,10 +108,10 @@ export default function Layout() {
       </main>
 
       <nav className="barra-inferior" aria-label="Secciones">
-        {principales.map(({ a, texto, icono: Icono }) => (
+        {principales.map(({ a, texto, corto, icono: Icono }) => (
           <NavLink key={texto} to={ruta(a)} end={!a}>
             <Icono size={21} />
-            <span>{texto}</span>
+            <span>{corto || texto}</span>
           </NavLink>
         ))}
         <button onClick={() => setAbierto(true)} aria-label="Más opciones" aria-expanded={abierto} aria-controls="menu-lateral">
