@@ -3,6 +3,7 @@ import { Eye, KeyRound, Pencil, Search, UserCheck, UserX } from 'lucide-react';
 import { apiFetch } from '../api/client';
 import { mensajeDeError } from '../api/errores';
 import ClaveTemporal from '../components/ClaveTemporal';
+import VentanaFlotante from '../components/VentanaFlotante';
 import { edad, formatoFecha, hoyISO } from '../fechas';
 
 const VACIO = {
@@ -140,11 +141,7 @@ export default function Pacientes() {
       {clave && <ClaveTemporal nombre={clave.nombre} valor={clave.valor} onCerrar={() => setClave(null)} />}
 
       {ficha && (
-        <div className="panel">
-          <div className="ficha-cab">
-            <h2>{ficha.apellido}, {ficha.nombre}</h2>
-            <button className="boton-chico" onClick={() => setFicha(null)}>Cerrar</button>
-          </div>
+        <VentanaFlotante titulo={`${ficha.apellido}, ${ficha.nombre}`} onCerrar={() => setFicha(null)}>
           <dl className="datos">
             <div><dt>DNI</dt><dd>{ficha.dni}</dd></div>
             <div>
@@ -162,10 +159,7 @@ export default function Pacientes() {
             <div><dt>Cobertura</dt><dd>{ficha.cobertura || '-'}</dd></div>
             <div><dt>Estado</dt><dd>{ficha.activo ? 'Activo' : 'De baja'}</dd></div>
           </dl>
-          <p className="suave" style={{ margin: 0 }}>
-            Los turnos y las recetas del paciente van a aparecer acá cuando se armen (Días 8 y 13).
-          </p>
-        </div>
+        </VentanaFlotante>
       )}
 
       <div className="panel">
