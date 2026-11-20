@@ -59,7 +59,7 @@ El repositorio tiene dos paquetes npm independientes: este `frontend/` (React 19
 - La sesión (`token`, `usuario`) vive en `localStorage` vía `src/auth.js`; `RutaProtegida` controla el acceso por rol (y manda a `/cambiar-clave` si hay clave temporal). Al cambiar la clave, el backend devuelve un token nuevo y `CambiarClave.jsx` lo guarda.
 - Fechas: el backend manda y recibe textos `'AAAA-MM-DD'` y `'HH:MM'`/`'HH:MM:SS'`. Usar los ayudantes de `src/fechas.js` (`hoyISO`, `formatoFecha`, `diaDeSemana`, `edad`, `sumarDias`) en lugar de parsear con `new Date('AAAA-MM-DD')` (eso lo toma como UTC y corre el día).
 - Estados de un turno: `pendiente → confirmado → en_atencion → atendido`, o `cancelado` / `ausente`; los textos para mostrar están en `src/estados.js`.
-- Estilos en CSS plano (`index.css`, `App.css`, `receta.css` para la receta imprimible); íconos de `lucide-react`. Diseño final (Día 21): todo el aspecto en variables de `:root` en `index.css`, verde azulado `#0b6e79`, fuentes Inter y Plus Jakarta Sans (`@fontsource`, funcionan sin internet: no agregar fuentes ni librerías desde CDN). Computadora: menú lateral; tableta: barra arriba + menú desplegable; celular: barra inferior (4 secciones por rol + "Más") y tablas apiladas como tarjetas. Animaciones cortas, apagadas con `prefers-reduced-motion`.
+- Estilos en CSS plano (`index.css` y `receta.css` para la receta imprimible); íconos de `lucide-react`. Diseño final (Día 21): todo el aspecto en variables de `:root` en `index.css`, verde azulado `#0b6e79`, fuentes Inter y Plus Jakarta Sans (`@fontsource`, funcionan sin internet: no agregar fuentes ni librerías desde CDN). Computadora: menú lateral; tableta: barra arriba + menú desplegable; celular: barra inferior (4 secciones por rol + "Más") y tablas apiladas como tarjetas. Animaciones cortas, apagadas con `prefers-reduced-motion`.
 
 ## Estado
 
@@ -68,7 +68,8 @@ Días hechos (1–21), todos mergeados a `develop` y pusheados: 1–3 base, logi
 ## Día 22 (instalación y cierre), rama `feature/instalacion`
 
 - Hecho: el backend sirve `dist/` (un solo proceso en http://localhost:3001) y `api/client.js` usa `/api` cuando está compilado. `instalar.bat` (raíz del repo) corre `npm install` y `npm run build` acá. Si se cambia algo de la interfaz, hay que volver a compilar para que se vea en la versión instalada.
-- `npm run lint` tiene 5 errores que ya estaban antes del Día 22 (no rompen el build): `react-hooks/set-state-in-effect` en `Layout.jsx`, `AgendaMedico.jsx`, `MisTurnos.jsx` y `Reportes.jsx`, y un espacio raro (`no-irregular-whitespace`) en `Reportes.jsx:55`. Pendiente decidir si se arreglan.
+- `npm run lint` da 0 errores (rama `feature/limpieza`). Para no volver a romperlo: no llamar a `setState` directo dentro de un `useEffect`; limpiar el estado en el manejador que cambia la pantalla (ej. `cambiarFecha` en `AgendaMedico`, `irPagina` en `MisTurnos`) o derivarlo (ej. `abiertoEn` en `Layout`).
+- Se borraron los restos de la plantilla de Vite (`App.css`, `assets/`, `public/icons.svg`).
 
 ## Decisiones abiertas
 

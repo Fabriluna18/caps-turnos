@@ -73,7 +73,7 @@ Variables del `.env`: `DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_NAME, JWT_SECR
 - Rutas públicas: `/login`, `/olvide`, `/restablecer`, `/cambiar-clave`, `/confirmar/:token`. `/receta/:id` (médico y paciente) va fuera del `Layout` para imprimir.
 - `src/api/client.js` `apiFetch` es la única entrada HTTP: agrega el JWT de `localStorage`, redirige a `/login` ante un 401 y a `/cambiar-clave` ante un 403 `CAMBIAR_CLAVE`, y lanza `Error` con `.codigo`/`.datos` de las respuestas `{ error, codigo }`.
 - La sesión (`token`, `usuario`) vive en `localStorage` vía `src/auth.js`; `RutaProtegida` controla el acceso por rol. Al cambiar la clave, el backend devuelve un token nuevo y `CambiarClave.jsx` lo guarda.
-- Estilos en CSS plano (`index.css`, `App.css`, `receta.css` para la receta imprimible); íconos de `lucide-react`. Diseño final (Día 21): todo el aspecto en variables de `:root` en `index.css`, verde azulado `#0b6e79`, fuentes Inter y Plus Jakarta Sans (`@fontsource`, funcionan sin internet). Computadora: menú lateral; tableta: barra arriba + menú desplegable; celular: barra inferior (4 secciones por rol + "Más") y tablas apiladas como tarjetas. Animaciones cortas, apagadas con `prefers-reduced-motion`.
+- Estilos en CSS plano (`index.css` y `receta.css` para la receta imprimible); íconos de `lucide-react`. Diseño final (Día 21): todo el aspecto en variables de `:root` en `index.css`, verde azulado `#0b6e79`, fuentes Inter y Plus Jakarta Sans (`@fontsource`, funcionan sin internet). Computadora: menú lateral; tableta: barra arriba + menú desplegable; celular: barra inferior (4 secciones por rol + "Más") y tablas apiladas como tarjetas. Animaciones cortas, apagadas con `prefers-reduced-motion`.
 
 ## Estado
 
@@ -87,7 +87,8 @@ Hecho: `instalar.bat` (dependencias, build, `.env` con claves al azar y `JWT_SEC
 
 Falta:
 - Probar `instalar.bat` + `iniciar.bat` desde un `.zip` de la rama `develop` bajado de GitHub. Ojo: si el `.zip` crea un `.env` nuevo, el instalador le cambia la clave a `caps_app`, y el `backend/.env` de la carpeta de desarrollo deja de andar hasta copiarle el `DB_PASSWORD` nuevo.
-- Gmail real (cuenta dedicada + contraseña de aplicación en el `.env`) y probar la recuperación de clave y el recordatorio.
+- ~~Gmail real~~: hecho y probado el 20/11/2026 (recuperación de clave y recordatorio llegan, al principio en Spam). Ojo: el sistema lee el `.env` solo al arrancar, hay que reiniciarlo después de cambiarlo. En el `.env` de desarrollo `FRONTEND_URL` quedó en `http://localhost:3001` porque Fabri usa `iniciar.bat`.
+- Cierre en curso (orden acordado): 1) limpieza (rama `feature/limpieza`: archivos de la plantilla de Vite, CSS sin uso, lint en 0) · 2) revisión visual en PC/tableta/celular · 3) pulir `index.css` sin cambiar colores ni estructura · 4) README nuevo con la captura `docs/receta-vista-impresion.png` · 5) los `CLAUDE.md` salen de GitHub (quedan en la PC, en `.gitignore`).
 - **No mergear a `main` ni poner tag hasta que Fabri lo diga** (quiere seguir sumando ideas en `develop`).
 
 ## Decisiones abiertas y notas

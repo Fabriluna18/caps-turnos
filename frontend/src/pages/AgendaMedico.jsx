@@ -30,12 +30,17 @@ export default function AgendaMedico() {
   }, [fecha]);
 
   useEffect(() => {
+    cargar();
+  }, [cargar]);
+
+  // Al cambiar de día se limpia lo que estaba abierto del día anterior
+  const cambiarFecha = (f) => {
+    setFecha(f);
     setAgenda(null);
     setRecetaDe(null);
     setHistorialDe(null);
     setFichaDe(null);
-    cargar();
-  }, [cargar]);
+  };
 
   const recetaLista = (id) => {
     setRecetaDe(null);
@@ -69,14 +74,14 @@ export default function AgendaMedico() {
     <>
       <h1>Agenda del día</h1>
       <div className="acciones" style={{ marginTop: 0 }}>
-        <button className="boton-chico" onClick={() => setFecha(sumarDias(fecha, -1))} aria-label="Día anterior">
+        <button className="boton-chico" onClick={() => cambiarFecha(sumarDias(fecha, -1))} aria-label="Día anterior">
           <ChevronLeft size={16} />
         </button>
-        <input type="date" value={fecha} onChange={(e) => e.target.value && setFecha(e.target.value)} aria-label="Elegir día" />
-        <button className="boton-chico" onClick={() => setFecha(sumarDias(fecha, 1))} aria-label="Día siguiente">
+        <input type="date" value={fecha} onChange={(e) => e.target.value && cambiarFecha(e.target.value)} aria-label="Elegir día" />
+        <button className="boton-chico" onClick={() => cambiarFecha(sumarDias(fecha, 1))} aria-label="Día siguiente">
           <ChevronRight size={16} />
         </button>
-        {fecha !== hoyISO() && <button className="boton-chico secundario" onClick={() => setFecha(hoyISO())}>Hoy</button>}
+        {fecha !== hoyISO() && <button className="boton-chico secundario" onClick={() => cambiarFecha(hoyISO())}>Hoy</button>}
       </div>
       <h2 style={{ textTransform: 'capitalize' }}>{diaDeSemana(fecha)} {formatoFecha(fecha)}</h2>
       {error && <p className="error" role="alert">{error}</p>}

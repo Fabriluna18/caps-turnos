@@ -36,13 +36,18 @@ export default function MisTurnos() {
   }, [tab, pagina]);
 
   useEffect(() => {
-    setDatos(null);
     cargar();
   }, [cargar]);
 
+  // Al cambiar de pestaña o de página se muestra "Cargando..." hasta que llegan los turnos
+  const irPagina = (p) => {
+    setDatos(null);
+    setPagina(p);
+  };
+
   const cambiarTab = (id) => {
     setTab(id);
-    setPagina(1);
+    irPagina(1);
     setCancelando(null);
     setOk('');
   };
@@ -137,9 +142,9 @@ export default function MisTurnos() {
           )}
           {paginas > 1 && (
             <div className="acciones">
-              <button className="boton-chico" disabled={pagina <= 1} onClick={() => setPagina((p) => p - 1)}>Anterior</button>
+              <button className="boton-chico" disabled={pagina <= 1} onClick={() => irPagina(pagina - 1)}>Anterior</button>
               <span className="suave">Página {pagina} de {paginas}</span>
-              <button className="boton-chico" disabled={pagina >= paginas} onClick={() => setPagina((p) => p + 1)}>Siguiente</button>
+              <button className="boton-chico" disabled={pagina >= paginas} onClick={() => irPagina(pagina + 1)}>Siguiente</button>
             </div>
           )}
         </div>

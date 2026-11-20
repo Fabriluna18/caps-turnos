@@ -52,13 +52,20 @@ function descargarCSV(r) {
     ...r.por_mes.map((m) => fila([nombreMes(m.mes), m.atendidos, m.ausentes, m.cancelados])),
   ];
   // El BOM y el ";" hacen que Excel lo abra bien en español
-  const blob = new Blob([`﻿${lineas.join('\r\n')}`], { type: 'text/csv;charset=utf-8' });
+  const blob = new Blob([`\uFEFF${lineas.join('\r\n')}`], { type: 'text/csv;charset=utf-8' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
   a.download = `reporte-${r.desde}-a-${r.hasta}.csv`;
   a.click();
   URL.revokeObjectURL(url);
+}
+
+function pedirReporte(f) {
+  const params = new URLSearchParams({ desde: f.desde, hasta: f.hasta });
+  if (f.especialidad_id) params.set('especialidad_id', f.especialidad_id);
+  if (f.medico_id) params.set('medico_id', f.medico_id);
+  return apiFetch(`/reportes?${params}`);
 }
 
 const tarjeta = { display: 'flex', flexDirection: 'column', gap: 4 };
@@ -68,7 +75,7 @@ export default function Reportes() {
   const [medicos, setMedicos] = useState([]);
   const [especialidades, setEspecialidades] = useState([]);
   const [r, setR] = useState(null);
-  const [cargando, setCargando] = useState(false);
+  const [cargando, setCargando] = useState(true); // el primer reporte se pide al entrar
   const [verTabla, setVerTabla] = useState(false);
   const [resaltado, setResaltado] = useState(null);
   const [error, setError] = useState('');
@@ -86,10 +93,7 @@ export default function Reportes() {
     setError('');
     setCargando(true);
     try {
-      const params = new URLSearchParams({ desde: f.desde, hasta: f.hasta });
-      if (f.especialidad_id) params.set('especialidad_id', f.especialidad_id);
-      if (f.medico_id) params.set('medico_id', f.medico_id);
-      setR(await apiFetch(`/reportes?${params}`));
+      setR(await pedirReporte(f));
     } catch (err) {
       setError(mensajeDeError(err));
     } finally {
@@ -98,7 +102,10 @@ export default function Reportes() {
   }, []);
 
   useEffect(() => {
-    generar(filtros);
+    pedirReporte(filtros)
+      .then(setR)
+      .catch((err) => setError(mensajeDeError(err)))
+      .finally(() => setCargando(false));
     // Solo la primera vez; después se genera con el botón
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

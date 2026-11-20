@@ -421,7 +421,6 @@ input[type='checkbox'], input[type='radio'] { accent-color: var(--color-primario
 .filtros { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 14px; }
 .filtros input { flex: 1; min-width: 220px; }
 .filtros-turnos { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; align-items: end; }
-.selector-medico { max-width: 460px; margin-bottom: 20px; }
 .buscador { width: 100%; margin-bottom: 10px; }
 .dos-columnas { display: grid; grid-template-columns: minmax(300px, 440px) minmax(0, 1fr); gap: 20px; align-items: start; margin-bottom: 20px; }
 .dos-columnas .panel { margin-bottom: 0; }

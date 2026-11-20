@@ -32,15 +32,15 @@ export default function Layout() {
   const usuario = usuarioActual();
   const menu = MENUS[usuario.rol];
   const base = `/${usuario.rol}`;
-  const [abierto, setAbierto] = useState(false);
+  // Se guarda en qué pantalla se abrió el menú desplegable: al cambiar de pantalla queda cerrado solo
+  const [abiertoEn, setAbiertoEn] = useState(null);
+  const abierto = abiertoEn === location.pathname;
+  const setAbierto = (si) => setAbiertoEn(si ? location.pathname : null);
 
-  // El menú desplegable se cierra al cambiar de pantalla o con la tecla Escape
-  useEffect(() => {
-    setAbierto(false);
-  }, [location.pathname]);
+  // También se cierra con la tecla Escape
   useEffect(() => {
     if (!abierto) return undefined;
-    const alTeclear = (e) => e.key === 'Escape' && setAbierto(false);
+    const alTeclear = (e) => e.key === 'Escape' && setAbiertoEn(null);
     window.addEventListener('keydown', alTeclear);
     return () => window.removeEventListener('keydown', alTeclear);
   }, [abierto]);
