@@ -151,7 +151,8 @@ router.get('/semana', async (req, res) => {
         if (feriadoDe[f]) estado = 'feriado';
         else if (licencias.some((l) => l.medico_id === m.id && l.desde <= f && l.hasta >= f)) estado = 'licencia';
         else if (!atiende.has(`${m.id}|${diaSemanaISO(f)}`)) estado = 'no_atiende';
-        return { fecha: f, estado, ...c, libres: disp[f]?.libres ?? null };
+        // Si el día ya no tiene horarios por delante (terminó), no se muestran libres
+        return { fecha: f, estado, ...c, libres: disp[f]?.total ? disp[f].libres : null };
       });
       filas.push({ id: m.id, apellido: m.apellido, nombre: m.nombre, especialidad: m.especialidad, dias: celdas });
     }

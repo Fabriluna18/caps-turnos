@@ -74,7 +74,7 @@ export default function CalendarioSemanal() {
       {datos && datos.medicos.length === 0 && <p className="suave">No hay médicos activos{especialidad ? ' en esa especialidad' : ''}.</p>}
       {datos && datos.medicos.length > 0 && (
         <div style={{ overflowX: 'auto', marginTop: 12 }}>
-          <table className="tabla" style={{ minWidth: 760 }}>
+          <table className="tabla grilla" style={{ minWidth: 760 }}>
             <thead>
               <tr>
                 <th>Médico</th>

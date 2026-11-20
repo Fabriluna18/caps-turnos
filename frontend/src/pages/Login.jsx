@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { Plus } from 'lucide-react';
 import { apiFetch } from '../api/client';
 import { mensajeDeError } from '../api/errores';
 import { guardarSesion, rutaInicio } from '../auth';
@@ -28,9 +29,14 @@ export default function Login() {
 
   return (
     <div className="centrado">
+      <div className="marca-ingreso">
+        <span className="logo" aria-hidden="true"><Plus size={22} strokeWidth={2.8} /></span>
+        CAPS Turnos
+      </div>
+      <p className="titulo-ingreso">Tu turno en el centro de salud, sin hacer fila.</p>
       <div className="tarjeta">
-        <h1>CAPS Turnos</h1>
-        <p className="suave">Ingresá con tu DNI y tu contraseña.</p>
+        <h1>Ingresar</h1>
+        <p className="suave">Usá tu DNI y tu contraseña.</p>
         <form className="formulario" onSubmit={entrar}>
           <label className="campo">
             DNI
@@ -53,6 +59,7 @@ export default function Login() {
         </form>
         <p className="pie-tarjeta"><Link className="enlace" to="/olvide">¿Olvidaste tu contraseña?</Link></p>
       </div>
+      <p className="nota-ingreso">¿Todavía no tenés cuenta? Pedila en la secretaría del CAPS con tu DNI.</p>
     </div>
   );
 }
