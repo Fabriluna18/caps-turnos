@@ -11,7 +11,8 @@
     "demo:medicos": "node scripts/crear-medicos-demo.js",
     "test": "node --test",
     "probar:doble-reserva": "node scripts/probar-doble-reserva.js",
-    "probar:permisos": "node scripts/probar-permisos.js"
+    "probar:permisos": "node scripts/probar-permisos.js",
+    "demo:completo": "node scripts/crear-datos-ejemplo.js"
   },
   "keywords": [],
   "author": "",
