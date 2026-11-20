@@ -19,9 +19,10 @@ El repositorio tiene dos paquetes npm independientes: este `frontend/` (React 19
   git push -u origin feature/<nombre>
   git checkout develop && git merge feature/<nombre> && git push
   ```
-  `main` recibe solo el merge final. No commitear ni pushear sin que Fabri lo pida.
+  `main` recibe solo el merge final.
+- **Las ramas, los commits, los pushes y los merges a `develop` los hace Claude** (Fabri dio permiso para usar GitHub, 20/11/2026): al terminar y probar una tarea, crear la rama `feature/<nombre>` (si no existe), commitear, pushear, mergear a `develop` y pushear. Fabri no tiene que tipear comandos de git. Lo único que se consulta antes: el merge a `main`, los tags y cualquier cosa destructiva (`reset --hard`, `push --force`, borrar ramas).
 - **Git no está en el PATH**: es portable, en `D:\Descargas\PortableGit\cmd\git.exe`. Desde PowerShell: `& 'D:\Descargas\PortableGit\cmd\git.exe' status`. El repo está en la carpeta de arriba (`..`); remoto `origin` en GitHub.
-- Cada tarea termina con: qué cambió, **pruebas paso a paso** (con qué usuario entrar y qué tocar, qué debería ver) y los comandos de commit y merge.
+- Cada tarea termina con: qué cambió, **pruebas paso a paso** (con qué usuario entrar y qué tocar, qué debería ver) y en qué rama y commit quedó.
 - Probar antes de dar algo por terminado: `npm run lint`, `npm run build` y mirar la pantalla en computadora, tableta y celular.
 - Si una pantalla necesita algo nuevo de la API, decirle a Fabri qué ruta o campo hay que agregar en el backend (no inventar respuestas).
 

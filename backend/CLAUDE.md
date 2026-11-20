@@ -19,9 +19,10 @@ El repositorio tiene dos paquetes npm independientes: este `backend/` (Express 5
   git push -u origin feature/<nombre>
   git checkout develop && git merge feature/<nombre> && git push
   ```
-  `main` recibe solo el merge final. No commitear ni pushear sin que Fabri lo pida.
+  `main` recibe solo el merge final.
+- **Las ramas, los commits, los pushes y los merges a `develop` los hace Claude** (Fabri dio permiso para usar GitHub, 20/11/2026): al terminar y probar una tarea, crear la rama `feature/<nombre>` (si no existe), commitear, pushear, mergear a `develop` y pushear. Fabri no tiene que tipear comandos de git. Lo único que se consulta antes: el merge a `main`, los tags y cualquier cosa destructiva (`reset --hard`, `push --force`, borrar ramas).
 - **Git no está en el PATH**: es portable, en `D:\Descargas\PortableGit\cmd\git.exe`. Desde PowerShell: `& 'D:\Descargas\PortableGit\cmd\git.exe' status`. El repo está en la carpeta de arriba (`..`); remoto `origin` en GitHub.
-- Cada tarea termina con: qué cambió, **pruebas paso a paso** (con qué usuario entrar y qué tocar, qué debería ver) y los comandos de commit y merge.
+- Cada tarea termina con: qué cambió, **pruebas paso a paso** (con qué usuario entrar y qué tocar, qué debería ver) y en qué rama y commit quedó.
 - Probar antes de dar algo por terminado: `npm test` y `npm run probar:permisos`.
 - Si hace falta un cambio en la base, agregarlo **al final** de `db/schema.sql` y decirle a Fabri que lo ejecute (en Workbench como `caps_app`; lo que necesite root, en phpMyAdmin).
 - Si un cambio de la API afecta al frontend (rutas, nombres de campos, códigos de error), avisarle a Fabri qué hay que tocar del otro lado.

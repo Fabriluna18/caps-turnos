@@ -19,9 +19,10 @@ Dos paquetes npm independientes, sin `package.json` en la raíz: `backend/` (Exp
   git push -u origin feature/<nombre>
   git checkout develop && git merge feature/<nombre> && git push
   ```
-  `main` recibe solo el merge final. No commitear ni pushear sin que Fabri lo pida.
+  `main` recibe solo el merge final.
+- **Las ramas, los commits, los pushes y los merges a `develop` los hace Claude** (Fabri dio permiso para usar GitHub, 20/11/2026): al terminar y probar una tarea, crear la rama `feature/<nombre>` (si no existe), commitear, pushear, mergear a `develop` y pushear. Fabri no tiene que tipear comandos de git. Lo único que se consulta antes: el merge a `main`, los tags y cualquier cosa destructiva (`reset --hard`, `push --force`, borrar ramas).
 - **Git no está en el PATH**: es portable, en `D:\Descargas\PortableGit\cmd\git.exe`. Desde PowerShell: `& 'D:\Descargas\PortableGit\cmd\git.exe' status`. Remoto `origin` en GitHub.
-- Cada tarea termina con: qué cambió, **pruebas paso a paso** (con qué usuario entrar y qué tocar, qué debería ver) y los comandos de commit y merge.
+- Cada tarea termina con: qué cambió, **pruebas paso a paso** (con qué usuario entrar y qué tocar, qué debería ver) y en qué rama y commit quedó.
 - Probar antes de dar algo por terminado: `npm test`, `npm run probar:permisos` y, si se tocó la interfaz, mirarla en computadora, tableta y celular.
 - Si hace falta un cambio en la base, agregarlo **al final** de `schema.sql` y decirle a Fabri que lo ejecute (en Workbench como `caps_app`; lo que necesite root, en phpMyAdmin).
 
