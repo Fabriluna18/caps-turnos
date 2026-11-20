@@ -162,6 +162,14 @@ Los primeros mails de una cuenta nueva suelen llegar a **Spam**. El recordatorio
 
 Instalado, corre **un solo programa**: el servidor atiende la API (`/api/...`) y también las pantallas ya compiladas.
 
+### Base de datos
+
+15 tablas en cuatro áreas: acceso, personas, agenda y turnos, y atención clínica.
+
+![Diagrama entidad-relación de la base de datos](docs/diagrama-base-de-datos.png)
+
+La imagen sale de [`docs/diagrama-base-de-datos.html`](docs/diagrama-base-de-datos.html): si cambia la base, se actualizan ahí las tablas y relaciones y se vuelve a sacar la captura.
+
 ```
 caps-turnos/
 ├── instalar.bat, iniciar.bat, copia-seguridad.bat
@@ -180,7 +188,9 @@ caps-turnos/
 │       ├── components/       piezas que se reutilizan
 │       ├── menus.js          menú de cada rol
 │       └── index.css         todo el diseño (colores en variables)
-└── docs/capturas/            imágenes de este README
+└── docs/
+    ├── capturas/             imágenes de este README
+    └── diagrama-base-de-datos.png / .html
 ```
 
 ## Para programar

@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Diagrama de la base de datos</title>
+<!--
+  Diagrama entidad-relación de la base caps_turnos (sale de backend/db/schema.sql).
+  La imagen docs/diagrama-base-de-datos.png se saca de esta página.
+  Si cambia la base: actualizar TABLAS / RELACIONES de abajo y volver a sacar la captura.
+-->
+<style>
+  :root {
+    --acceso: #475569; --acceso-suave: #f1f5f9;
+    --personas: #0b6e79; --personas-suave: #e6f3f4;
+    --agenda: #b45309; --agenda-suave: #fef3c7;
+    --clinica: #6d28d9; --clinica-suave: #ede9fe;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #fff; font-family: 'Segoe UI', system-ui, sans-serif; color: #0f172a; }
+  #lienzo { position: relative; width: 2060px; height: 1230px; background: #fbfcfd; }
+  .cabecera { position: absolute; left: 40px; top: 28px; right: 40px; display: flex; justify-content: space-between; align-items: flex-start; }
+  .cabecera h1 { margin: 0; font-size: 34px; letter-spacing: -0.02em; }
+  .cabecera p { margin: 6px 0 0; color: #64748b; font-size: 16px; }
+  .leyenda { display: flex; gap: 22px; align-items: center; font-size: 14px; color: #334155; flex-wrap: wrap; justify-content: flex-end; max-width: 1050px; }
+  .leyenda span { display: inline-flex; align-items: center; gap: 7px; }
+  .leyenda i { width: 14px; height: 14px; border-radius: 4px; display: inline-block; }
+  .tabla { position: absolute; width: 330px; background: #fff; border: 2px solid; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 14px -8px rgba(15, 23, 42, 0.25); z-index: 2; }
+  .tabla h2 { margin: 0; padding: 8px 12px; font-size: 17px; color: #fff; display: flex; justify-content: space-between; align-items: baseline; }
+  .tabla h2 small { font-size: 12px; font-weight: 500; opacity: 0.85; }
+  .fila { display: flex; align-items: center; gap: 6px; height: 23px; padding: 0 10px; font-size: 13px; border-top: 1px solid #f1f5f9; }
+  .fila b { font-weight: 600; }
+  .fila .tipo { margin-left: auto; color: #94a3b8; font-size: 11.5px; font-family: Consolas, monospace; }
+  .marca { font-size: 9.5px; font-weight: 700; padding: 1px 4px; border-radius: 4px; min-width: 22px; text-align: center; }
+  .marca.pk { background: #fde68a; color: #78350f; }
+  .marca.fk { background: #dbeafe; color: #1e40af; }
+  .marca.uq { background: #f1f5f9; color: #475569; }
+  .marca.vacia { visibility: hidden; }
+  svg { position: absolute; inset: 0; z-index: 1; overflow: visible; }
+  svg .etiqueta { font: 700 13px 'Segoe UI', sans-serif; }
+  .pie { position: absolute; left: 40px; right: 40px; bottom: 20px; font-size: 13px; color: #64748b; display: flex; gap: 28px; flex-wrap: wrap; }
+  .pie b { color: #334155; }
+</style>
+</head>
+<body>
+<div id="lienzo">
+  <div class="cabecera">
+    <div>
+      <h1>CAPS Turnos — Base de datos</h1>
+      <p>Diagrama entidad-relación de la base <b>caps_turnos</b> (MariaDB) · 15 tablas</p>
+    </div>
+    <div class="leyenda">
+      <span><i style="background: var(--acceso)"></i>Acceso</span>
+      <span><i style="background: var(--personas)"></i>Personas</span>
+      <span><i style="background: var(--agenda)"></i>Agenda y turnos</span>
+      <span><i style="background: var(--clinica)"></i>Atención clínica</span>
+      <span><b class="marca pk">PK</b> clave primaria</span>
+      <span><b class="marca fk">FK</b> clave foránea</span>
+      <span><b class="marca uq">UQ</b> valor único</span>
+      <span><b>1 —— N</b> uno a muchos</span>
+    </div>
+  </div>
+  <svg id="lineas"></svg>
+  <div class="pie">
+    <span><b>Nada se borra:</b> médicos, pacientes, horarios, licencias, feriados y especialidades se desactivan (activo / activa / eliminado).</span>
+    <span><b>Sin doble reserva:</b> clave única (medico_id, fecha, hora, slot_ocupado); slot_ocupado vale NULL si el turno está cancelado.</span>
+    <span><b>Ficha clínica:</b> cada cambio es una fila nueva (versiones).</span>
+  </div>
+</div>
+
+<script>
+// [nombre, tipo, marca]  marca: pk | fk | uq | pkfk | ''
+const TABLAS = {
+  usuarios: { area: 'acceso', x: 40, y: 258, campos: [
+    ['id', 'INT', 'pk'], ['dni', 'VARCHAR(8)', 'uq'], ['nombre', 'VARCHAR(80)'], ['apellido', 'VARCHAR(80)'],
+    ['email', 'VARCHAR(150)', 'uq'], ['telefono', 'VARCHAR(30)'], ['password_hash', 'VARCHAR(255)'],
+    ['rol', 'ENUM(secretaria, medico, paciente)'], ['activo', 'TINYINT(1)'], ['debe_cambiar_clave', 'TINYINT(1)'],
+    ['sesiones_desde', 'INT'], ['creado_en', 'TIMESTAMP']] },
+  recuperaciones: { area: 'acceso', x: 40, y: 870, campos: [
+    ['id', 'INT', 'pk'], ['usuario_id', 'INT', 'fk'], ['token_hash', 'CHAR(64)', 'uq'], ['expira_en', 'DATETIME'],
+    ['usado_en', 'DATETIME'], ['creado_en', 'TIMESTAMP']] },
+  especialidades: { area: 'personas', x: 40, y: 112, campos: [
+    ['id', 'INT', 'pk'], ['nombre', 'VARCHAR(80)', 'uq'], ['activa', 'TINYINT(1)']] },
+  medicos: { area: 'personas', x: 440, y: 300, campos: [
+    ['usuario_id', 'INT', 'pkfk'], ['matricula', 'VARCHAR(20)', 'uq'], ['especialidad_id', 'INT', 'fk']] },
+  pacientes: { area: 'personas', x: 440, y: 800, campos: [
+    ['usuario_id', 'INT', 'pkfk'], ['fecha_nacimiento', 'DATE'], ['direccion', 'VARCHAR(150)'],
+    ['localidad', 'VARCHAR(80)'], ['cobertura', 'VARCHAR(80)']] },
+  horarios: { area: 'agenda', x: 840, y: 120, campos: [
+    ['id', 'INT', 'pk'], ['medico_id', 'INT', 'fk'], ['dia_semana', 'TINYINT (1 a 7)'], ['hora_inicio', 'TIME'],
+    ['hora_fin', 'TIME'], ['duracion_min', 'SMALLINT'], ['activo', 'TINYINT(1)'], ['eliminado', 'TINYINT(1)'], ['creado_en', 'TIMESTAMP']] },
+  licencias: { area: 'agenda', x: 840, y: 400, campos: [
+    ['id', 'INT', 'pk'], ['medico_id', 'INT', 'fk'], ['desde', 'DATE'], ['hasta', 'DATE'],
+    ['motivo', 'VARCHAR(100)'], ['activa', 'TINYINT(1)'], ['creado_en', 'TIMESTAMP']] },
+  turnos: { area: 'agenda', x: 840, y: 640, campos: [
+    ['id', 'INT', 'pk'], ['medico_id', 'INT', 'fk'], ['paciente_id', 'INT', 'fk'], ['fecha', 'DATE'], ['hora', 'TIME'],
+    ['duracion_min', 'SMALLINT'], ['estado', 'ENUM(6 estados)'], ['motivo', 'VARCHAR(150)'], ['creado_por', 'INT', 'fk'],
+    ['creado_en', 'TIMESTAMP'], ['cancelado_en', 'DATETIME'], ['slot_ocupado', 'generada', 'uq'], ['recordatorio_enviado_en', 'DATETIME']] },
+  feriados: { area: 'agenda', x: 1690, y: 120, campos: [
+    ['id', 'INT', 'pk'], ['fecha', 'DATE', 'uq'], ['descripcion', 'VARCHAR(100)'], ['activo', 'TINYINT(1)']] },
+  confirmaciones: { area: 'agenda', x: 1265, y: 120, campos: [
+    ['id', 'INT', 'pk'], ['turno_id', 'INT', 'fk'], ['token_hash', 'CHAR(64)', 'uq'], ['creado_en', 'DATETIME'], ['usado_en', 'DATETIME']] },
+  recetas: { area: 'clinica', x: 1265, y: 330, campos: [
+    ['id', 'INT', 'pk'], ['turno_id', 'INT', 'fk'], ['medico_id', 'INT', 'fk'], ['paciente_id', 'INT', 'fk'], ['fecha', 'DATE'],
+    ['diagnostico', 'VARCHAR(200)'], ['indicaciones', 'VARCHAR(1000)'], ['anulada', 'TINYINT(1)'], ['anulada_en', 'DATETIME'], ['creado_en', 'TIMESTAMP']] },
+  receta_items: { area: 'clinica', x: 1690, y: 330, campos: [
+    ['id', 'INT', 'pk'], ['receta_id', 'INT', 'fk'], ['orden', 'TINYINT', 'uq'], ['medicamento', 'VARCHAR(150)'],
+    ['presentacion', 'VARCHAR(100)'], ['dosis', 'VARCHAR(150)'], ['cantidad', 'VARCHAR(50)']] },
+  atenciones: { area: 'clinica', x: 1265, y: 650, campos: [
+    ['id', 'INT', 'pk'], ['turno_id', 'INT', 'fk'], ['medico_id', 'INT', 'fk'], ['paciente_id', 'INT', 'fk'],
+    ['motivo_consulta', 'VARCHAR(300)'], ['presion_sistolica', 'SMALLINT'], ['presion_diastolica', 'SMALLINT'],
+    ['frecuencia_cardiaca', 'SMALLINT'], ['temperatura', 'DECIMAL(4,1)'], ['saturacion', 'TINYINT'], ['peso_kg', 'DECIMAL(5,1)'],
+    ['talla_cm', 'SMALLINT'], ['examen_fisico', 'VARCHAR(2000)'], ['diagnostico', 'VARCHAR(300)'], ['indicaciones', 'VARCHAR(2000)'],
+    ['finalizada', 'TINYINT(1)'], ['finalizada_en', 'DATETIME'], ['creado_en', 'TIMESTAMP'], ['actualizado_en', 'DATETIME']] },
+  atencion_notas: { area: 'clinica', x: 1690, y: 650, campos: [
+    ['id', 'INT', 'pk'], ['atencion_id', 'INT', 'fk'], ['texto', 'VARCHAR(1000)'], ['creado_por', 'INT', 'fk'], ['creado_en', 'TIMESTAMP']] },
+  fichas: { area: 'clinica', x: 1690, y: 870, campos: [
+    ['id', 'INT', 'pk'], ['paciente_id', 'INT', 'fk'], ['grupo_sanguineo', 'VARCHAR(3)'], ['alergias', 'VARCHAR(500)'],
+    ['enfermedades', 'VARCHAR(500)'], ['medicacion', 'VARCHAR(500)'], ['antecedentes_personales', 'VARCHAR(1000)'],
+    ['antecedentes_familiares', 'VARCHAR(1000)'], ['creado_por', 'INT', 'fk'], ['creado_en', 'TIMESTAMP']] },
+};
+
+// [tabla hija, campo FK, tabla padre, campo PK, cardinalidad del lado hijo ('N' o '1'), recorrido]
+// recorrido (solo para las líneas largas): sale del padre, va a x1, baja/sube a y, sigue hasta x2 y entra a la hija.
+// Así pasan por los espacios libres entre tablas en vez de cruzarlas.
+const RELACIONES = [
+  ['medicos', 'usuario_id', 'usuarios', 'id', '1'],
+  ['pacientes', 'usuario_id', 'usuarios', 'id', '1'],
+  ['medicos', 'especialidad_id', 'especialidades', 'id', 'N'],
+  ['recuperaciones', 'usuario_id', 'usuarios', 'id', 'N'],
+  ['horarios', 'medico_id', 'medicos', 'usuario_id', 'N'],
+  ['licencias', 'medico_id', 'medicos', 'usuario_id', 'N'],
+  ['turnos', 'medico_id', 'medicos', 'usuario_id', 'N'],
+  ['turnos', 'paciente_id', 'pacientes', 'usuario_id', 'N'],
+  ['turnos', 'creado_por', 'usuarios', 'id', 'N'],
+  ['confirmaciones', 'turno_id', 'turnos', 'id', 'N'],
+  ['recetas', 'turno_id', 'turnos', 'id', 'N'],
+  ['recetas', 'medico_id', 'medicos', 'usuario_id', 'N', { x1: 792, y: 612, x2: 1200 }],
+  ['recetas', 'paciente_id', 'pacientes', 'usuario_id', 'N', { x1: 792, y: 1000, x2: 1225 }],
+  ['receta_items', 'receta_id', 'recetas', 'id', 'N'],
+  ['atenciones', 'turno_id', 'turnos', 'id', '1'],
+  ['atenciones', 'medico_id', 'medicos', 'usuario_id', 'N', { x1: 800, y: 619, x2: 1212 }],
+  ['atenciones', 'paciente_id', 'pacientes', 'usuario_id', 'N', { x1: 800, y: 1008, x2: 1237 }],
+  ['atencion_notas', 'atencion_id', 'atenciones', 'id', 'N'],
+  ['atencion_notas', 'creado_por', 'medicos', 'usuario_id', 'N', { x1: 784, y: 626, x2: 1625 }],
+  ['fichas', 'paciente_id', 'pacientes', 'usuario_id', 'N', { x1: 808, y: 1155, x2: 1655 }],
+  ['fichas', 'creado_por', 'medicos', 'usuario_id', 'N', { x1: 808, y: 633, x2: 1640 }],
+];
+
+// Camino en ángulo recto con las esquinas redondeadas
+function enAnguloRecto(puntos, radio = 10) {
+  let d = `M ${puntos[0].x} ${puntos[0].y}`;
+  for (let i = 1; i < puntos.length - 1; i++) {
+    const [p, c, n] = [puntos[i - 1], puntos[i], puntos[i + 1]];
+    const r1 = Math.min(radio, Math.hypot(c.x - p.x, c.y - p.y) / 2);
+    const r2 = Math.min(radio, Math.hypot(n.x - c.x, n.y - c.y) / 2);
+    const antes = { x: c.x - Math.sign(c.x - p.x) * r1, y: c.y - Math.sign(c.y - p.y) * r1 };
+    const despues = { x: c.x + Math.sign(n.x - c.x) * r2, y: c.y + Math.sign(n.y - c.y) * r2 };
+    d += ` L ${antes.x} ${antes.y} Q ${c.x} ${c.y} ${despues.x} ${despues.y}`;
+  }
+  const u = puntos[puntos.length - 1];
+  return `${d} L ${u.x} ${u.y}`;
+}
+
+// Color de cada línea según la tabla a la que apunta
+const COLOR_PADRE = { usuarios: '#64748b', especialidades: '#0e7490', medicos: '#0b6e79', pacientes: '#2563eb', turnos: '#d97706', recetas: '#7c3aed', atenciones: '#7c3aed' };
+
+const lienzo = document.getElementById('lienzo');
+const svg = document.getElementById('lineas');
+const cajas = {};
+for (const [nombre, t] of Object.entries(TABLAS)) {
+  const div = document.createElement('div');
+  div.className = 'tabla';
+  div.style.left = `${t.x}px`;
+  div.style.top = `${t.y}px`;
+  div.style.borderColor = `var(--${t.area})`;
+  div.innerHTML = `<h2 style="background: var(--${t.area})">${nombre}<small>${t.campos.length} campos</small></h2>` +
+    t.campos.map(([c, tipo, m = '']) => {
+      const marcas = m === 'pkfk' ? '<b class="marca pk">PK</b><b class="marca fk">FK</b>' : `<b class="marca ${m || 'vacia'}">${m.toUpperCase() || '·'}</b>`;
+      const fuerte = m.includes('pk') || m.includes('fk') ? 'b' : 'span';
+      return `<div class="fila" data-campo="${c}">${marcas}<${fuerte}>${c}</${fuerte}><span class="tipo">${tipo}</span></div>`;
+    }).join('');
+  lienzo.appendChild(div);
+  cajas[nombre] = div;
+}
+
+const NS = 'http://www.w3.org/2000/svg';
+const punto = (tabla, campo, lado) => {
+  const caja = cajas[tabla];
+  const fila = caja.querySelector(`[data-campo="${campo}"]`);
+  return { x: caja.offsetLeft + (lado === 'der' ? caja.offsetWidth : 0), y: caja.offsetTop + fila.offsetTop + fila.offsetHeight / 2 };
+};
+const texto = (x, y, t, color, ancla) => {
+  const el = document.createElementNS(NS, 'text');
+  el.setAttribute('x', x); el.setAttribute('y', y + 4); el.setAttribute('fill', color);
+  el.setAttribute('class', 'etiqueta'); el.setAttribute('text-anchor', ancla); el.textContent = t;
+  svg.appendChild(el);
+};
+
+for (const [hija, fk, padre, pk, card, recorrido] of RELACIONES) {
+  const color = COLOR_PADRE[padre] || '#64748b';
+  const xHija = cajas[hija].offsetLeft;
+  const xPadre = cajas[padre].offsetLeft;
+  let d;
+  let a;
+  let b;
+  if (recorrido) {
+    // a: entrada a la hija (izquierda); b: salida del padre (derecha)
+    a = punto(hija, fk, 'izq');
+    b = punto(padre, pk, 'der');
+    const { x1, y, x2 } = recorrido;
+    d = enAnguloRecto([b, { x: x1, y: b.y }, { x: x1, y }, { x: x2, y }, { x: x2, y: a.y }, a]);
+    texto(a.x - 8, a.y - 9, card, color, 'end');
+    texto(b.x + 8, b.y - 9, '1', color, 'start');
+  } else if (Math.abs(xHija - xPadre) < 10) {
+    // Misma columna: la línea sale por la izquierda y da la vuelta
+    a = punto(hija, fk, 'izq');
+    b = punto(padre, pk, 'izq');
+    d = `M ${a.x} ${a.y} C ${a.x - 34} ${a.y}, ${b.x - 34} ${b.y}, ${b.x} ${b.y}`;
+    texto(a.x - 8, a.y - 9, card, color, 'end');
+    texto(b.x - 8, b.y - 9, '1', color, 'end');
+  } else {
+    const hijaDerecha = xHija > xPadre;
+    a = punto(hija, fk, hijaDerecha ? 'izq' : 'der');
+    b = punto(padre, pk, hijaDerecha ? 'der' : 'izq');
+    const curva = Math.max(60, Math.abs(a.x - b.x) * 0.45);
+    const s = hijaDerecha ? -1 : 1;
+    d = `M ${a.x} ${a.y} C ${a.x + s * curva} ${a.y}, ${b.x - s * curva} ${b.y}, ${b.x} ${b.y}`;
+    texto(a.x + s * 8, a.y - 9, card, color, hijaDerecha ? 'end' : 'start');
+    texto(b.x - s * 8, b.y - 9, '1', color, hijaDerecha ? 'start' : 'end');
+  }
+  const camino = document.createElementNS(NS, 'path');
+  camino.setAttribute('d', d);
+  camino.setAttribute('fill', 'none');
+  camino.setAttribute('stroke', color);
+  camino.setAttribute('stroke-width', '2');
+  camino.setAttribute('opacity', '0.75');
+  svg.appendChild(camino);
+  for (const p of [a, b]) {
+    const c = document.createElementNS(NS, 'circle');
+    c.setAttribute('cx', p.x); c.setAttribute('cy', p.y); c.setAttribute('r', 3.5); c.setAttribute('fill', color);
+    svg.appendChild(c);
+  }
+}
+</script>
+</body>
+</html>
