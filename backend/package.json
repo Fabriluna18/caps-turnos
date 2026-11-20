@@ -12,7 +12,9 @@
     "test": "node --test",
     "probar:doble-reserva": "node scripts/probar-doble-reserva.js",
     "probar:permisos": "node scripts/probar-permisos.js",
-    "demo:completo": "node scripts/crear-datos-ejemplo.js"
+    "demo:completo": "node scripts/crear-datos-ejemplo.js",
+    "instalar": "node scripts/instalar.js",
+    "copia": "node scripts/copia-seguridad.js"
   },
   "keywords": [],
   "author": "",

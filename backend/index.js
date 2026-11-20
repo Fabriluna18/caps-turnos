@@ -1,4 +1,6 @@
 require('dotenv').config();
+const fs = require('fs');
+const path = require('path');
 const express = require('express');
 const cors = require('cors');
 const authRoutes = require('./routes/auth');
@@ -45,9 +47,25 @@ app.use((req, res, next) => {
 });
 app.use(express.json());
 
-app.get('/', (req, res) => {
-  res.json({ mensaje: 'API de CAPS Turnos funcionando' });
-});
+// Si el frontend está compilado (npm run build en frontend), se sirve desde acá: un solo proceso.
+// Si no, en desarrollo el frontend corre aparte con Vite (puerto 5173).
+const DIST = path.join(__dirname, '..', 'frontend', 'dist');
+const hayFrontend = fs.existsSync(path.join(DIST, 'index.html'));
+if (hayFrontend) {
+  app.use(express.static(DIST));
+  // Las pantallas (/login, /secretaria/turnos, ...) las resuelve React: al navegador se le devuelve index.html.
+  // Solo cuando pide una página (text/html); lo demás sigue al 404 de siempre.
+  app.use((req, res, next) => {
+    const esApi = req.path === '/api' || req.path.startsWith('/api/');
+    const pidePagina = (req.headers.accept || '').includes('text/html');
+    if (req.method !== 'GET' || esApi || !pidePagina) return next();
+    res.sendFile(path.join(DIST, 'index.html'));
+  });
+} else {
+  app.get('/', (req, res) => {
+    res.json({ mensaje: 'API de CAPS Turnos funcionando' });
+  });
+}
 
 app.use('/api/auth', authRoutes);
 app.use('/api/especialidades', especialidadRoutes);
@@ -79,5 +97,6 @@ app.use((err, req, res, next) => {
 
 app.listen(PORT, () => {
   console.log(`Servidor corriendo en http://localhost:${PORT}`);
+  if (hayFrontend) console.log(`Sistema listo: abrí http://localhost:${PORT} en el navegador`);
   iniciarRecordatorios();
 });
