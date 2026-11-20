@@ -20,6 +20,7 @@ Dos paquetes npm independientes, sin `package.json` en la raíz: `backend/` (Exp
   git checkout develop && git merge feature/<nombre> && git push
   ```
   `main` recibe solo el merge final. No commitear ni pushear sin que Fabri lo pida.
+- **Git no está en el PATH**: es portable, en `D:\Descargas\PortableGit\cmd\git.exe`. Desde PowerShell: `& 'D:\Descargas\PortableGit\cmd\git.exe' status`. Remoto `origin` en GitHub.
 - Cada tarea termina con: qué cambió, **pruebas paso a paso** (con qué usuario entrar y qué tocar, qué debería ver) y los comandos de commit y merge.
 - Probar antes de dar algo por terminado: `npm test`, `npm run probar:permisos` y, si se tocó la interfaz, mirarla en computadora, tableta y celular.
 - Si hace falta un cambio en la base, agregarlo **al final** de `schema.sql` y decirle a Fabri que lo ejecute (en Workbench como `caps_app`; lo que necesite root, en phpMyAdmin).
