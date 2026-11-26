@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Tecnologías del servidor</title>
+<style>
+  @page { size: A4; margin: 18mm 18mm 16mm; }
+  :root { --acento: #0b6e79; --texto: #1f2a30; --suave: #5b6b73; --borde: #d7e3e5; --fondo: #f2f8f9; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: "Segoe UI", Arial, sans-serif; color: var(--texto); font-size: 10.5pt; line-height: 1.45; background: #fff; }
+  header { border-bottom: 3px solid var(--acento); padding-bottom: 8px; margin-bottom: 14px; }
+  .sistema { color: var(--acento); font-weight: 600; font-size: 9pt; letter-spacing: .08em; text-transform: uppercase; }
+  h1 { margin: 2px 0 4px; font-size: 20pt; }
+  .bajada { color: var(--suave); margin: 0; }
+  h2 { color: var(--acento); font-size: 12.5pt; margin: 18px 0 6px; }
+  p { margin: 0 0 8px; }
+  table { width: 100%; border-collapse: collapse; margin: 4px 0 6px; }
+  th, td { text-align: left; vertical-align: top; padding: 6px 8px; border-bottom: 1px solid var(--borde); }
+  th { background: var(--fondo); font-size: 9pt; text-transform: uppercase; letter-spacing: .04em; color: var(--suave); }
+  td:first-child { font-weight: 600; white-space: nowrap; width: 26%; }
+  td:nth-child(2) { white-space: nowrap; color: var(--suave); width: 11%; }
+  tr { page-break-inside: avoid; }
+  .resumen { background: var(--fondo); border-left: 4px solid var(--acento); padding: 10px 12px; margin: 8px 0; }
+  ul { margin: 0 0 8px; padding-left: 18px; }
+  li { margin-bottom: 3px; }
+  code { font-family: Consolas, monospace; font-size: 9.5pt; background: var(--fondo); padding: 0 3px; border-radius: 3px; }
+  footer { margin-top: 18px; padding-top: 6px; border-top: 1px solid var(--borde); color: var(--suave); font-size: 8.5pt; }
+</style>
+</head>
+<body>
+<header>
+  <div class="sistema">Sistema de turnos · CAPS</div>
+  <h1>Tecnologías del servidor</h1>
+  <p class="bajada">Con qué está hecho el backend del sistema y para qué se usa cada herramienta.</p>
+</header>
+
+<div class="resumen">
+  <strong>En una línea:</strong> servidor desarrollado en Node.js con Express, que expone una API REST,
+  guarda los datos en MariaDB, autentica con JWT y guarda las contraseñas cifradas con bcrypt.
+</div>
+
+<h2>Lenguaje y entorno</h2>
+<p>El servidor está escrito en <strong>JavaScript</strong> y corre sobre <strong>Node.js</strong>, el entorno que
+permite ejecutar JavaScript fuera del navegador. Usa el sistema de módulos <strong>CommonJS</strong>
+(<code>require</code> / <code>module.exports</code>).</p>
+
+<h2>Herramientas principales</h2>
+<table>
+  <thead><tr><th>Herramienta</th><th>Versión</th><th>Para qué se usa</th></tr></thead>
+  <tbody>
+    <tr><td>Node.js</td><td>—</td><td>Entorno de ejecución del servidor.</td></tr>
+    <tr><td>Express</td><td>5.3</td><td>Framework web: recibe los pedidos HTTP en las rutas <code>/api/...</code> y decide qué responder. Cada archivo de <code>routes/</code> agrupa las rutas de un rol (secretaría, médico, paciente).</td></tr>
+    <tr><td>MariaDB</td><td>10.4</td><td>Base de datos relacional (incluida en XAMPP). Guarda médicos, pacientes, horarios, turnos, atenciones, recetas y fichas clínicas.</td></tr>
+    <tr><td>mysql2</td><td>3.24</td><td>Librería para conectarse a la base, con consultas parametrizadas y transacciones.</td></tr>
+    <tr><td>jsonwebtoken (JWT)</td><td>9.0</td><td>Inicio de sesión: al entrar con DNI y contraseña, el servidor entrega un "pase" firmado que el navegador envía en cada pedido.</td></tr>
+    <tr><td>bcryptjs</td><td>3.0</td><td>Cifra las contraseñas con el algoritmo bcrypt. Nunca se guardan en texto.</td></tr>
+    <tr><td>node-cron</td><td>4.6</td><td>Tarea programada que cada 5 minutos busca turnos próximos y envía el recordatorio.</td></tr>
+    <tr><td>nodemailer</td><td>10.5</td><td>Envío de correos (recordatorios de turno y recuperación de contraseña) a través de Gmail.</td></tr>
+    <tr><td>dotenv</td><td>18.0</td><td>Lee la configuración del archivo <code>.env</code> (datos de la base, clave secreta, puerto, correo).</td></tr>
+    <tr><td>cors</td><td>2.8</td><td>Permite que la interfaz web se comunique con la API desde otra dirección durante el desarrollo.</td></tr>
+    <tr><td>nodemon</td><td>3.1</td><td>Solo para desarrollo: reinicia el servidor automáticamente al guardar cambios.</td></tr>
+  </tbody>
+</table>
+
+<h2>Forma de programación</h2>
+<p>El código no está organizado con clases (programación orientada a objetos), sino en <strong>módulos con funciones</strong>,
+en una <strong>arquitectura en capas</strong>:</p>
+<ul>
+  <li><strong>Rutas</strong> (<code>routes/</code>): una por rol; reciben el pedido y devuelven la respuesta.</li>
+  <li><strong>Middleware</strong> (<code>middleware/auth.js</code>): verifica la sesión y el rol antes de cada ruta.</li>
+  <li><strong>Módulos de dominio</strong>: la lógica del negocio, separada de las rutas. Por ejemplo,
+    <code>calculo-turnos.js</code> calcula los horarios libres con <strong>funciones puras</strong> (sin base de datos), lo que
+    permite probarlas de forma automática; <code>reservas.js</code> es el único camino para reservar un turno.</li>
+  <li><strong>Base de datos</strong> (<code>db/schema.sql</code>): tablas, claves y restricciones.</li>
+</ul>
+
+<h2>Seguridad</h2>
+<ul>
+  <li>Contraseñas cifradas con bcrypt; sesiones con JWT que se invalidan al cambiar la contraseña.</li>
+  <li>Límite de intentos de inicio de sesión (5 fallos bloquean 15 minutos).</li>
+  <li>Cada ruta controla el rol del usuario; a los datos ajenos se responde "no encontrado".</li>
+  <li>Reservas dentro de una transacción con bloqueo, más una clave única en la base que impide dar dos veces el mismo horario.</li>
+  <li>La cuenta que usa el sistema en la base no tiene permiso para borrar: los datos se desactivan, no se eliminan.</li>
+</ul>
+
+<h2>Pruebas</h2>
+<p>Pruebas automáticas con el corredor que trae Node (<code>node --test</code>) para el cálculo de turnos, una prueba de
+permisos que recorre todas las rutas con cada rol y una prueba de dos reservas simultáneas.</p>
+
+<footer>Uso local en una PC del CAPS, sin servicios en la nube. Todos los datos de ejemplo son ficticios.</footer>
+</body>
+</html>
