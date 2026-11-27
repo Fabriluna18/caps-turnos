@@ -701,6 +701,9 @@ body:has(.ventana[open]) { overflow: hidden; } /* la página de atrás no se mue
   .filtros.de-a-dos > .campo { flex: 1 1 120px; min-width: 0; }
   .filtros.de-a-dos input, .filtros.de-a-dos select { width: 100%; min-width: 0; }
   .filtros.de-a-dos > .boton { flex: 1 1 100%; }
+  /* El buscador a todo el ancho y los desplegables de a dos abajo (ej. Médicos) */
+  .filtros.de-a-dos > input[type="search"] { flex: 1 1 100%; }
+  .filtros.de-a-dos > select { flex: 1 1 120px; }
 }
 
 /* Título de la pantalla con su botón principal al lado (por ejemplo "Nuevo paciente") */

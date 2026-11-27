@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { KeyRound, Pencil, UserCheck, UserPlus, UserX } from 'lucide-react';
+import { KeyRound, Pencil, Search, UserCheck, UserPlus, UserX } from 'lucide-react';
 import { apiFetch } from '../api/client';
 import { mensajeDeError } from '../api/errores';
 import Especialidades from '../components/Especialidades';
@@ -10,6 +10,9 @@ const VACIO = { dni: '', nombre: '', apellido: '', email: '', telefono: '', matr
 export default function Medicos() {
   const [medicos, setMedicos] = useState([]);
   const [especialidades, setEspecialidades] = useState([]);
+  const [busqueda, setBusqueda] = useState('');
+  const [filtroEsp, setFiltroEsp] = useState('');
+  const [filtroEstado, setFiltroEstado] = useState('todos');
   const [form, setForm] = useState(VACIO);
   const [editando, setEditando] = useState(null);
   const [formAbierto, setFormAbierto] = useState(false);
@@ -133,6 +136,19 @@ export default function Medicos() {
     }
   };
 
+  // Filtros: por nombre, apellido, DNI o matrícula; por especialidad y por estado
+  const sinTildes = (s) => String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+  const q = sinTildes(busqueda.trim());
+  const filtrados = medicos.filter((m) => {
+    if (filtroEsp && String(m.especialidad_id) !== filtroEsp) return false;
+    if (filtroEstado === 'activos' && !m.activo) return false;
+    if (filtroEstado === 'baja' && m.activo) return false;
+    if (!q) return true;
+    const texto = sinTildes(`${m.apellido} ${m.nombre} ${m.nombre} ${m.apellido} ${m.dni} ${m.matricula}`);
+    return texto.includes(q);
+  });
+  const hayFiltro = Boolean(q || filtroEsp || filtroEstado !== 'todos');
+
   return (
     <>
       <div className="titulo-pagina">
@@ -209,9 +225,28 @@ export default function Medicos() {
       )}
 
       <div className="panel">
-        <h2>Equipo médico ({medicos.length})</h2>
+        <h2>Equipo médico ({hayFiltro ? `${filtrados.length} de ${medicos.length}` : medicos.length})</h2>
+        {medicos.length > 0 && (
+          <div className="filtros de-a-dos">
+            <input
+              type="search" value={busqueda} onChange={(e) => setBusqueda(e.target.value)}
+              placeholder="DNI, apellido, nombre o matrícula" aria-label="Buscar médico"
+            />
+            <select value={filtroEsp} onChange={(e) => setFiltroEsp(e.target.value)} aria-label="Filtrar por especialidad">
+              <option value="">Especialidades</option>
+              {especialidades.map((esp) => <option key={esp.id} value={esp.id}>{esp.nombre}</option>)}
+            </select>
+            <select value={filtroEstado} onChange={(e) => setFiltroEstado(e.target.value)} aria-label="Filtrar por estado">
+              <option value="todos">Estado: todos</option>
+              <option value="activos">Activos</option>
+              <option value="baja">De baja</option>
+            </select>
+          </div>
+        )}
         {medicos.length === 0 ? (
           <p className="suave">Todavía no cargaste médicos.</p>
+        ) : filtrados.length === 0 ? (
+          <p className="suave"><Search size={14} /> No hay médicos que coincidan con la búsqueda.</p>
         ) : (
           <div className="tabla-scroll">
             <table className="tabla">
@@ -219,7 +254,7 @@ export default function Medicos() {
                 <tr><th>Médico</th><th>Especialidad</th><th>Matrícula</th><th>Contacto</th><th>Estado</th><th></th></tr>
               </thead>
               <tbody>
-                {medicos.map((m) => (
+                {filtrados.map((m) => (
                   <tr key={m.id} className={m.activo ? '' : 'fila-baja'}>
                     <td>
                       <strong>{m.apellido}, {m.nombre}</strong>

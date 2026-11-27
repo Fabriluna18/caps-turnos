@@ -27,12 +27,16 @@ export default function Pacientes() {
   const [error, setError] = useState('');
   const [ok, setOk] = useState('');
 
+  // No se muestra a nadie hasta que se busca por nombre, apellido o DNI (mínimo 2 caracteres)
+  const hayBusqueda = busqueda.trim().length >= 2;
+
   // Busca al escribir (esperando un instante) y descarta respuestas viejas
   useEffect(() => {
+    if (!hayBusqueda) return undefined;
     let vigente = true;
     const espera = setTimeout(
       () => {
-        const params = new URLSearchParams({ q: busqueda, estado, pagina: String(pagina) });
+        const params = new URLSearchParams({ q: busqueda.trim(), estado, pagina: String(pagina) });
         apiFetch(`/pacientes?${params}`)
           .then((r) => {
             if (vigente) setDatos(r);
@@ -44,13 +48,13 @@ export default function Pacientes() {
             if (vigente) setCargado(true);
           });
       },
-      busqueda ? 300 : 0
+      300
     );
     return () => {
       vigente = false;
       clearTimeout(espera);
     };
-  }, [busqueda, estado, pagina, version]);
+  }, [hayBusqueda, busqueda, estado, pagina, version]);
 
   const recargar = () => setVersion((v) => v + 1);
   const limpiarMensajes = () => {
@@ -108,6 +112,9 @@ export default function Pacientes() {
         const r = await apiFetch('/pacientes', { method: 'POST', body: JSON.stringify(form) });
         cerrarFormulario();
         setClave({ nombre: `${r.paciente.nombre} ${r.paciente.apellido}`, valor: r.clave_temporal });
+        // Se muestra al recién cargado buscándolo por su DNI
+        setBusqueda(String(r.paciente.dni || form.dni));
+        setPagina(1);
       }
       recargar();
     } catch (err) {
@@ -253,7 +260,7 @@ export default function Pacientes() {
         <h2>Pacientes registrados</h2>
         <div className="filtros">
           <input
-            type="search" value={busqueda} placeholder="Buscar por apellido, nombre o DNI"
+            type="search" value={busqueda} placeholder="Buscar por DNI, apellido o nombre"
             onChange={(e) => {
               setBusqueda(e.target.value);
               setPagina(1);
@@ -273,15 +280,15 @@ export default function Pacientes() {
           </select>
         </div>
 
-        {!cargado ? (
+        {!hayBusqueda ? (
+          <p className="suave">
+            <Search size={14} /> Escribí el DNI, el apellido o el nombre del paciente para ver sus datos.
+          </p>
+        ) : !cargado ? (
           <p className="suave">Cargando...</p>
         ) : datos.items.length === 0 ? (
           <p className="suave">
-            {busqueda || estado !== 'todos' ? (
-              <><Search size={14} /> No hay pacientes que coincidan con la búsqueda.</>
-            ) : (
-              'Todavía no cargaste pacientes.'
-            )}
+            <Search size={14} /> No hay pacientes que coincidan con la búsqueda.
           </p>
         ) : (
           <>

@@ -37,30 +37,6 @@ const RAPIDOS = [
   ['anio', 'Este año'],
 ];
 
-function descargarCSV(r) {
-  const fila = (celdas) => celdas.map((c) => `"${String(c ?? '').replace(/"/g, '""')}"`).join(';');
-  const lineas = [
-    fila(['Reporte de atención', `${formatoFecha(r.desde)} al ${formatoFecha(r.hasta)}`]),
-    '',
-    fila(['Médico', 'Especialidad', 'Atendidos', 'Pacientes distintos', 'Ausentes', 'Cancelados', 'Promedio mensual']),
-    ...r.por_medico.map((m) =>
-      fila([`${m.apellido}, ${m.nombre}${m.activo ? '' : ' (de baja)'}`, m.especialidad, m.atendidos, m.pacientes, m.ausentes, m.cancelados, numero(m.promedio_mensual)])
-    ),
-    fila(['TOTAL', '', r.totales.atendidos, r.totales.pacientes, r.totales.ausentes, r.totales.cancelados, numero(r.totales.promedio_mensual)]),
-    '',
-    fila(['Mes', 'Atendidos', 'Ausentes', 'Cancelados']),
-    ...r.por_mes.map((m) => fila([nombreMes(m.mes), m.atendidos, m.ausentes, m.cancelados])),
-  ];
-  // El BOM y el ";" hacen que Excel lo abra bien en español
-  const blob = new Blob([`\uFEFF${lineas.join('\r\n')}`], { type: 'text/csv;charset=utf-8' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `reporte-${r.desde}-a-${r.hasta}.csv`;
-  a.click();
-  URL.revokeObjectURL(url);
-}
-
 function pedirReporte(f) {
   const params = new URLSearchParams({ desde: f.desde, hasta: f.hasta });
   if (f.especialidad_id) params.set('especialidad_id', f.especialidad_id);
@@ -71,11 +47,14 @@ function pedirReporte(f) {
 const tarjeta = { display: 'flex', flexDirection: 'column', gap: 4 };
 
 export default function Reportes() {
-  const [filtros, setFiltros] = useState({ ...rango('6'), especialidad_id: '', medico_id: '' });
+  // Arranca en el mes en curso (pedido de la ingeniera: los porcentajes, del último mes)
+  const [filtros, setFiltros] = useState({ ...rango('mes'), especialidad_id: '', medico_id: '' });
+  const [usados, setUsados] = useState(filtros); // con qué filtros se generó el reporte que se ve
   const [medicos, setMedicos] = useState([]);
   const [especialidades, setEspecialidades] = useState([]);
   const [r, setR] = useState(null);
   const [cargando, setCargando] = useState(true); // el primer reporte se pide al entrar
+  const [descargando, setDescargando] = useState(false);
   const [verTabla, setVerTabla] = useState(false);
   const [resaltado, setResaltado] = useState(null);
   const [error, setError] = useState('');
@@ -94,6 +73,7 @@ export default function Reportes() {
     setCargando(true);
     try {
       setR(await pedirReporte(f));
+      setUsados(f);
     } catch (err) {
       setError(mensajeDeError(err));
     } finally {
@@ -115,6 +95,25 @@ export default function Reportes() {
     const nuevos = { ...filtros, ...rango(tipo) };
     setFiltros(nuevos);
     generar(nuevos);
+  };
+
+  // El armado del Excel se carga recién al tocar el botón, así la página no pesa más
+  const descargar = async () => {
+    setDescargando(true);
+    setError('');
+    try {
+      const { descargarExcel } = await import('../reporte-excel');
+      const esp = especialidades.find((e) => String(e.id) === usados.especialidad_id);
+      const med = medicos.find((m) => String(m.id) === usados.medico_id);
+      await descargarExcel(r, {
+        especialidad: esp?.nombre,
+        medico: med ? `${med.apellido}, ${med.nombre}` : '',
+      });
+    } catch (err) {
+      setError(mensajeDeError(err));
+    } finally {
+      setDescargando(false);
+    }
   };
 
   const medicosFiltrados = filtros.especialidad_id
@@ -162,8 +161,8 @@ export default function Reportes() {
           </label>
           <button className="boton" disabled={cargando}>{cargando ? 'Generando...' : 'Generar reporte'}</button>
           {r && (
-            <button type="button" className="boton secundario" onClick={() => descargarCSV(r)}>
-              <Download size={16} /> Descargar (Excel)
+            <button type="button" className="boton secundario" disabled={descargando} onClick={descargar}>
+              <Download size={16} /> {descargando ? 'Armando...' : 'Descargar (Excel)'}
             </button>
           )}
         </form>
