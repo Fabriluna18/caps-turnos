@@ -114,9 +114,20 @@ router.get('/', async (req, res) => {
     condiciones.push('r.turno_id = ?');
     valores.push(turnoId);
   }
+  // Cuántas hay de cada grupo (con la búsqueda aplicada), para las pestañas "Vigentes" / "Anuladas"
+  const dondeSinEstado = condiciones.join(' AND ');
+  // anuladas=0 → solo las vigentes; anuladas=1 → solo las anuladas; sin el parámetro → todas
+  if (req.query.anuladas === '0' || req.query.anuladas === '1') {
+    condiciones.push(`r.anulada = ${req.query.anuladas === '1' ? 1 : 0}`);
+  }
   const donde = condiciones.join(' AND ');
 
   try {
+    const [[cuentas]] = await pool.query(
+      `SELECT COALESCE(SUM(r.anulada = 0), 0) AS vigentes, COALESCE(SUM(r.anulada = 1), 0) AS anuladas
+       FROM recetas r JOIN usuarios up ON up.id = r.paciente_id WHERE ${dondeSinEstado}`,
+      valores
+    );
     const [[{ total }]] = await pool.query(
       `SELECT COUNT(*) AS total FROM recetas r JOIN usuarios up ON up.id = r.paciente_id WHERE ${donde}`,
       valores
@@ -137,6 +148,8 @@ router.get('/', async (req, res) => {
     );
     res.json({
       total: Number(total),
+      total_vigentes: Number(cuentas.vigentes),
+      total_anuladas: Number(cuentas.anuladas),
       pagina,
       por_pagina: POR_PAGINA,
       items: filas.map((f) => ({

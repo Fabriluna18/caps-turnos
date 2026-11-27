@@ -10,11 +10,12 @@ export default function Recetas() {
   const [texto, setTexto] = useState('');
   const [q, setQ] = useState('');
   const [pagina, setPagina] = useState(1);
+  const [verAnuladas, setVerAnuladas] = useState(false);
   const [datos, setDatos] = useState(null);
   const [error, setError] = useState('');
 
   const cargar = useCallback(() => {
-    const params = new URLSearchParams({ pagina: String(pagina) });
+    const params = new URLSearchParams({ pagina: String(pagina), anuladas: verAnuladas ? '1' : '0' });
     if (q) params.set('q', q);
     apiFetch(`/recetas?${params}`)
       .then((r) => {
@@ -22,7 +23,7 @@ export default function Recetas() {
         setError('');
       })
       .catch((err) => setError(mensajeDeError(err)));
-  }, [q, pagina]);
+  }, [q, pagina, verAnuladas]);
 
   useEffect(() => {
     cargar();
@@ -32,6 +33,13 @@ export default function Recetas() {
     e.preventDefault();
     setPagina(1);
     setQ(texto.trim());
+  };
+
+  const cambiarPestana = (anuladas) => {
+    if (anuladas === verAnuladas) return;
+    setDatos(null);
+    setPagina(1);
+    setVerAnuladas(anuladas);
   };
 
   const paginas = datos ? Math.max(1, Math.ceil(datos.total / datos.por_pagina)) : 1;
@@ -53,9 +61,22 @@ export default function Recetas() {
         </form>
       )}
 
+      <div className="pestanas" role="tablist">
+        <button role="tab" aria-selected={!verAnuladas} className={!verAnuladas ? 'activa' : ''} onClick={() => cambiarPestana(false)}>
+          Vigentes{datos ? ` (${datos.total_vigentes})` : ''}
+        </button>
+        <button role="tab" aria-selected={verAnuladas} className={verAnuladas ? 'activa' : ''} onClick={() => cambiarPestana(true)}>
+          Anuladas{datos ? ` (${datos.total_anuladas})` : ''}
+        </button>
+      </div>
+
       {!datos && !error && <p className="suave">Cargando...</p>}
       {datos && datos.items.length === 0 && (
-        <p className="suave">{q ? 'No hay recetas para esa búsqueda.' : 'Todavía no hay recetas.'}</p>
+        <p className="suave">
+          {q
+            ? `No hay recetas ${verAnuladas ? 'anuladas' : 'vigentes'} para esa búsqueda.`
+            : verAnuladas ? 'No hay recetas anuladas.' : 'Todavía no hay recetas vigentes.'}
+        </p>
       )}
 
       {datos && datos.items.length > 0 && (

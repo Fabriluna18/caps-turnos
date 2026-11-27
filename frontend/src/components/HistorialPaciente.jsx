@@ -4,6 +4,27 @@ import { mensajeDeError } from '../api/errores';
 import { ESTADOS } from '../estados';
 import { edad, formatoFecha } from '../fechas';
 
+function TablaRecetas({ recetas }) {
+  return (
+    <table className="tabla">
+      <thead><tr><th>Fecha</th><th>Medicamentos</th><th /></tr></thead>
+      <tbody>
+        {recetas.map((r) => (
+          <tr key={r.id} style={r.anulada ? { opacity: 0.6 } : undefined}>
+            <td><strong>{formatoFecha(r.fecha)}</strong></td>
+            <td>
+              {r.medicamentos}
+              {r.diagnostico && <div className="suave">{r.diagnostico}</div>}
+              {r.anulada && <div><span className="estado cancelado">Anulada</span></div>}
+            </td>
+            <td><a className="boton-chico" href={`/receta/${r.id}`} target="_blank" rel="noopener noreferrer">Ver</a></td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+}
+
 // Lo que el paciente de un turno tuvo con ESTE médico: consultas anteriores y recetas
 export default function HistorialPaciente({ turnoId, onCerrar }) {
   const [h, setH] = useState(null);
@@ -14,6 +35,10 @@ export default function HistorialPaciente({ turnoId, onCerrar }) {
       .then(setH)
       .catch((err) => setError(mensajeDeError(err)));
   }, [turnoId]);
+
+  // Las anuladas van aparte, abajo de las vigentes
+  const vigentes = h ? h.recetas.filter((r) => !r.anulada) : [];
+  const anuladas = h ? h.recetas.filter((r) => r.anulada) : [];
 
   return (
     <div className="panel">
@@ -49,25 +74,17 @@ export default function HistorialPaciente({ turnoId, onCerrar }) {
           )}
 
           <h3>Recetas que le hiciste</h3>
-          {h.recetas.length === 0 ? (
-            <p className="suave">Ninguna todavía.</p>
+          {vigentes.length === 0 ? (
+            <p className="suave">{anuladas.length ? 'Ninguna vigente.' : 'Ninguna todavía.'}</p>
           ) : (
-            <table className="tabla">
-              <thead><tr><th>Fecha</th><th>Medicamentos</th><th /></tr></thead>
-              <tbody>
-                {h.recetas.map((r) => (
-                  <tr key={r.id} style={r.anulada ? { opacity: 0.6 } : undefined}>
-                    <td><strong>{formatoFecha(r.fecha)}</strong></td>
-                    <td>
-                      {r.medicamentos}
-                      {r.diagnostico && <div className="suave">{r.diagnostico}</div>}
-                      {r.anulada && <div><span className="estado cancelado">Anulada</span></div>}
-                    </td>
-                    <td><a className="boton-chico" href={`/receta/${r.id}`} target="_blank" rel="noopener noreferrer">Ver</a></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <TablaRecetas recetas={vigentes} />
+          )}
+
+          {anuladas.length > 0 && (
+            <>
+              <h3>Recetas anuladas</h3>
+              <TablaRecetas recetas={anuladas} />
+            </>
           )}
         </>
       )}
