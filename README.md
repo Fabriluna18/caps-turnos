@@ -14,6 +14,7 @@ La secretaría organiza médicos, horarios y turnos; el médico atiende, hace re
 - [Qué hace cada usuario](#qué-hace-cada-usuario)
 - [Capturas](#capturas)
 - [Instalación en una PC nueva](#instalación-en-una-pc-nueva)
+- [Actualizar a una versión nueva](#actualizar-a-una-versión-nueva)
 - [Uso diario](#uso-diario)
 - [Copias de seguridad](#copias-de-seguridad)
 - [Mails (recuperar la clave y recordatorios)](#mails-recuperar-la-clave-y-recordatorios)
@@ -26,7 +27,7 @@ La secretaría organiza médicos, horarios y turnos; el médico atiende, hace re
 
 ## Qué hace cada usuario
 
-Se entra con el **DNI** y una contraseña. Cada usuario ve solo su menú.
+Se entra con el **DNI** y una contraseña. Cada usuario ve solo su menú. Todas las listas tienen **filtros** (con un botón "Limpiar filtros").
 
 ### Secretaría
 - **Inicio:** turnos del día, cuántos faltan confirmar, atendidos del mes, avisos (feriados, licencias, médicos sin horarios) y un calendario semanal con la ocupación de cada médico.
@@ -34,7 +35,7 @@ Se entra con el **DNI** y una contraseña. Cada usuario ve solo su menú.
 - **Horarios:** días y horas de atención de cada médico, licencias y feriados.
 - **Pacientes:** alta, edición, baja y búsqueda por apellido, nombre o DNI.
 - **Turnos:** calendario con los horarios libres, reserva, reprogramación y cancelación.
-- **Reportes:** atendidos por médico y por mes, ausentismo y promedio mensual, con descarga para Excel.
+- **Reportes:** atendidos por médico y por mes, ausentismo y promedio mensual, con descarga en Excel (con título, ordenado de más a menos y una hoja con filtros).
 
 ### Médico
 - **Inicio:** el siguiente paciente y los números del día, la semana y el mes.
@@ -43,6 +44,7 @@ Se entra con el **DNI** y una contraseña. Cada usuario ve solo su menú.
 - **Ficha clínica** (antecedentes, alergias, medicación), con historial de versiones.
 - **Recetas** imprimibles, que se pueden anular.
 - **Pacientes:** solo los que tuvieron turno con él.
+- **Mis ausencias:** avisar los días que no va a atender; esos días no se dan turnos con él.
 
 ### Paciente
 - Ver los médicos, sus días de atención y el próximo turno libre.
@@ -97,6 +99,18 @@ Se entra con el **DNI** y una contraseña. Cada usuario ve solo su menú.
 5. Si es la instalación definitiva, a la pregunta "¿Es la instalación definitiva?" responder **s**: todas las cuentas van a tener que cambiar la clave `demo1234` en el primer ingreso.
 
 > Si Windows muestra "Windows protegió su PC", tocar **Más información → Ejecutar de todas formas**.
+
+## Actualizar a una versión nueva
+
+Para cuando el sistema **ya está instalado** y salió una versión nueva. Los datos (pacientes, turnos, recetas) no se tocan: están en MySQL, no en la carpeta.
+
+1. Cerrar la ventana negra del sistema (si está abierto) y dejar **MySQL** prendido en XAMPP.
+2. Descargar el proyecto nuevo (**Code → Download ZIP**) y extraerlo en una carpeta **nueva**. No pisar la carpeta vieja.
+3. En la carpeta nueva, doble clic en **`actualizar.bat`**.
+4. Cuando lo pida, **arrastrar la carpeta vieja** a la ventana negra y apretar Enter.
+5. Al terminar, abrir el sistema con **`iniciar.bat` de la carpeta nueva**. Cuando se vea que todo anda, se puede borrar la carpeta vieja.
+
+`actualizar.bat` copia de la carpeta vieja el `backend/.env` (con las claves de la base y de Gmail) y las copias de seguridad, hace una copia de seguridad nueva, pone la base al día (sin borrar nada), instala y compila. No pide la clave de root ni cambia las claves de nadie. Si algo falla, la carpeta vieja queda como estaba y se sigue usando esa.
 
 ## Uso diario
 
@@ -172,7 +186,7 @@ La imagen sale de [`docs/diagrama-base-de-datos.html`](docs/diagrama-base-de-dat
 
 ```
 caps-turnos/
-├── instalar.bat, iniciar.bat, copia-seguridad.bat
+├── instalar.bat, actualizar.bat, iniciar.bat, copia-seguridad.bat
 ├── backend/
 │   ├── index.js              servidor y rutas
 │   ├── routes/               una ruta por tema y por rol
