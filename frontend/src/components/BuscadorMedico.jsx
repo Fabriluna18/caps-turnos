@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import Filtros from './Filtros';
 
 const normalizar = (t) => String(t).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 
@@ -6,15 +7,20 @@ const normalizar = (t) => String(t).normalize('NFD').replace(/[\u0300-\u036f]/g,
 export default function BuscadorMedico({ medicos, especialidades = [], onElegir }) {
   const [texto, setTexto] = useState('');
   const [especialidad, setEspecialidad] = useState('');
+  const [estado, setEstado] = useState('todos');
 
   const q = normalizar(texto.trim());
-  const buscando = q.length >= 2 || especialidad !== '';
+  const buscando = q.length >= 2 || especialidad !== '' || estado !== 'todos';
+  // El filtro de estado solo tiene sentido si la lista trae médicos de baja
+  const conBajas = medicos.some((m) => m.activo === false);
 
   const resultados = !buscando
     ? []
     : medicos
         .filter((m) => {
           if (especialidad && String(m.especialidad_id) !== especialidad) return false;
+          if (estado === 'activos' && m.activo === false) return false;
+          if (estado === 'baja' && m.activo !== false) return false;
           if (q.length < 2) return true;
           return normalizar(`${m.apellido} ${m.nombre} ${m.especialidad}`).includes(q);
         })
@@ -22,20 +28,27 @@ export default function BuscadorMedico({ medicos, especialidades = [], onElegir 
 
   return (
     <div>
-      <div className="filtros">
+      <Filtros clase="de-a-dos" hayFiltro={buscando} onLimpiar={() => { setTexto(''); setEspecialidad(''); setEstado('todos'); }}>
         <input
           type="search" value={texto} onChange={(e) => setTexto(e.target.value)}
           placeholder="Buscar médico por apellido, nombre o especialidad" aria-label="Buscar médico"
         />
         {especialidades.length > 0 && (
           <select value={especialidad} onChange={(e) => setEspecialidad(e.target.value)} aria-label="Especialidad">
-            <option value="">Todas las especialidades</option>
+            <option value="">Especialidad: todas</option>
             {especialidades.map((e) => (
               <option key={e.id} value={e.id}>{e.nombre}</option>
             ))}
           </select>
         )}
-      </div>
+        {conBajas && (
+          <select value={estado} onChange={(e) => setEstado(e.target.value)} aria-label="Estado">
+            <option value="todos">Estado: todos</option>
+            <option value="activos">Solo activos</option>
+            <option value="baja">Solo de baja</option>
+          </select>
+        )}
+      </Filtros>
 
       {!buscando ? (
         <p className="suave">Escribí al menos 2 letras o elegí una especialidad para ver médicos.</p>

@@ -2,6 +2,8 @@ import { useCallback, useEffect, useState } from 'react';
 import { Download } from 'lucide-react';
 import { apiFetch } from '../api/client';
 import { mensajeDeError } from '../api/errores';
+import Encabezado from '../components/Encabezado';
+import Filtros from '../components/Filtros';
 import { formatoFecha, hoyISO } from '../fechas';
 
 const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
@@ -57,6 +59,7 @@ export default function Reportes() {
   const [descargando, setDescargando] = useState(false);
   const [verTabla, setVerTabla] = useState(false);
   const [resaltado, setResaltado] = useState(null);
+  const [orden, setOrden] = useState('atendidos');
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -121,20 +124,37 @@ export default function Reportes() {
     : medicos;
   const maxMes = r ? Math.max(1, ...r.por_mes.map((m) => m.atendidos)) : 1;
   const maxMedico = r ? Math.max(1, ...r.por_medico.map((m) => m.atendidos)) : 1;
+  const porMedico = r
+    ? [...r.por_medico].sort((a, b) =>
+        orden === 'apellido' ? `${a.apellido} ${a.nombre}`.localeCompare(`${b.apellido} ${b.nombre}`, 'es')
+          : orden === 'ausentes' ? b.ausentes - a.ausentes
+            : b.atendidos - a.atendidos)
+    : [];
 
   return (
     <>
-      <h1>Reportes</h1>
-      <p className="suave">Pacientes atendidos por médico, totales y promedio mensual.</p>
+      <Encabezado titulo="Reportes" subtitulo="Pacientes atendidos por médico, totales y promedio mensual. Elegí el período y descargalo en Excel.">
+        {r && (
+          <button type="button" className="boton" disabled={descargando} onClick={descargar}>
+            <Download size={18} /> {descargando ? 'Armando el Excel...' : 'Descargar Excel'}
+          </button>
+        )}
+      </Encabezado>
       {error && <p className="error" role="alert">{error}</p>}
 
       <div className="panel">
-        <div className="acciones desliza" style={{ marginTop: 0 }}>
+        <h2>Período y filtros</h2>
+        <p className="panel-subtitulo">Atajos rápidos:</p>
+        <div className="acciones desliza" style={{ marginTop: 0, marginBottom: 16 }}>
           {RAPIDOS.map(([tipo, texto]) => (
             <button key={tipo} className="boton-chico secundario" onClick={() => usarRapido(tipo)}>{texto}</button>
           ))}
         </div>
-        <form className="filtros de-a-dos" style={{ flexWrap: 'wrap', alignItems: 'flex-end' }} onSubmit={(e) => { e.preventDefault(); generar(filtros); }}>
+        <Filtros
+          clase="de-a-dos" onSubmit={(e) => { e.preventDefault(); generar(filtros); }}
+          hayFiltro={Boolean(filtros.especialidad_id || filtros.medico_id)}
+          onLimpiar={() => setFiltros((f) => ({ ...f, especialidad_id: '', medico_id: '' }))}
+        >
           <label className="campo">
             Desde
             <input type="date" value={filtros.desde} onChange={(e) => cambiar('desde', e.target.value)} required />
@@ -160,12 +180,7 @@ export default function Reportes() {
             </select>
           </label>
           <button className="boton" disabled={cargando}>{cargando ? 'Generando...' : 'Generar reporte'}</button>
-          {r && (
-            <button type="button" className="boton secundario" disabled={descargando} onClick={descargar}>
-              <Download size={16} /> {descargando ? 'Armando...' : 'Descargar (Excel)'}
-            </button>
-          )}
-        </form>
+        </Filtros>
       </div>
 
       {r && (
@@ -257,13 +272,21 @@ export default function Reportes() {
 
           <div className="panel">
             <h2>Por médico</h2>
+            <p className="panel-subtitulo">Cuántos pacientes atendió cada médico en el período.</p>
+            <Filtros clase="de-a-dos">
+              <select value={orden} onChange={(e) => setOrden(e.target.value)} aria-label="Ordenar">
+                <option value="atendidos">Ordenar: más atendidos primero</option>
+                <option value="apellido">Ordenar: por apellido</option>
+                <option value="ausentes">Ordenar: más ausentes primero</option>
+              </select>
+            </Filtros>
             <div style={{ overflowX: 'auto' }}>
               <table className="tabla numeros">
                 <thead>
                   <tr><th>Médico</th><th style={{ minWidth: 160 }}>Atendidos</th><th>Pacientes</th><th>Ausentes</th><th>Cancelados</th><th>Prom. mensual</th></tr>
                 </thead>
                 <tbody>
-                  {r.por_medico.map((m) => (
+                  {porMedico.map((m) => (
                     <tr key={m.id}>
                       <td>
                         <strong>{m.apellido}, {m.nombre}</strong>

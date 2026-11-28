@@ -3,6 +3,8 @@ import { Eye, KeyRound, Pencil, Search, UserCheck, UserPlus, UserX } from 'lucid
 import { apiFetch } from '../api/client';
 import { mensajeDeError } from '../api/errores';
 import ClaveTemporal from '../components/ClaveTemporal';
+import Encabezado from '../components/Encabezado';
+import Filtros from '../components/Filtros';
 import VentanaFlotante from '../components/VentanaFlotante';
 import { edad, formatoFecha, hoyISO } from '../fechas';
 
@@ -16,6 +18,10 @@ export default function Pacientes() {
   const [cargado, setCargado] = useState(false);
   const [busqueda, setBusqueda] = useState('');
   const [estado, setEstado] = useState('todos');
+  const [cobertura, setCobertura] = useState('');
+  const [edadF, setEdadF] = useState('');
+  const [email, setEmail] = useState('');
+  const [coberturas, setCoberturas] = useState([]);
   const [pagina, setPagina] = useState(1);
   const [version, setVersion] = useState(0);
   const [form, setForm] = useState(VACIO);
@@ -37,6 +43,9 @@ export default function Pacientes() {
     const espera = setTimeout(
       () => {
         const params = new URLSearchParams({ q: busqueda.trim(), estado, pagina: String(pagina) });
+        if (cobertura) params.set('cobertura', cobertura);
+        if (edadF) params.set('edad', edadF);
+        if (email) params.set('email', email);
         apiFetch(`/pacientes?${params}`)
           .then((r) => {
             if (vigente) setDatos(r);
@@ -54,7 +63,26 @@ export default function Pacientes() {
       vigente = false;
       clearTimeout(espera);
     };
-  }, [hayBusqueda, busqueda, estado, pagina, version]);
+  }, [hayBusqueda, busqueda, estado, cobertura, edadF, email, pagina, version]);
+
+  // Las coberturas cargadas, para el desplegable del filtro
+  useEffect(() => {
+    apiFetch('/pacientes/coberturas').then(setCoberturas).catch(() => setCoberturas([]));
+  }, []);
+
+  const hayExtra = Boolean(estado !== 'todos' || cobertura || edadF || email);
+  const cambiarFiltro = (set) => (e) => {
+    set(e.target.value);
+    setPagina(1);
+  };
+  const limpiarFiltros = () => {
+    setBusqueda('');
+    setEstado('todos');
+    setCobertura('');
+    setEdadF('');
+    setEmail('');
+    setPagina(1);
+  };
 
   const recargar = () => setVersion((v) => v + 1);
   const limpiarMensajes = () => {
@@ -112,9 +140,9 @@ export default function Pacientes() {
         const r = await apiFetch('/pacientes', { method: 'POST', body: JSON.stringify(form) });
         cerrarFormulario();
         setClave({ nombre: `${r.paciente.nombre} ${r.paciente.apellido}`, valor: r.clave_temporal });
-        // Se muestra al recién cargado buscándolo por su DNI
+        // Se muestra al recién cargado buscándolo por su DNI (sin otros filtros que lo escondan)
+        limpiarFiltros();
         setBusqueda(String(r.paciente.dni || form.dni));
-        setPagina(1);
       }
       recargar();
     } catch (err) {
@@ -154,10 +182,9 @@ export default function Pacientes() {
 
   return (
     <>
-      <div className="titulo-pagina">
-        <h1>Pacientes</h1>
+      <Encabezado titulo="Pacientes" subtitulo="Buscá a una persona para ver o corregir sus datos, darla de baja o generarle una clave nueva.">
         <button className="boton" onClick={nuevo}><UserPlus size={18} /> Nuevo paciente</button>
-      </div>
+      </Encabezado>
       {error && !formAbierto && <p className="error" role="alert">{error}</p>}
       {ok && <p className="exito" role="status">{ok}</p>}
 
@@ -258,7 +285,10 @@ export default function Pacientes() {
 
       <div className="panel">
         <h2>Pacientes registrados</h2>
-        <div className="filtros">
+        <p className="panel-subtitulo">
+          {hayBusqueda && cargado ? `${datos.total} resultado${datos.total === 1 ? '' : 's'}` : 'Por privacidad, no se muestra a nadie hasta que buscás.'}
+        </p>
+        <Filtros clase="de-a-dos" hayFiltro={Boolean(busqueda || hayExtra)} onLimpiar={limpiarFiltros}>
           <input
             type="search" value={busqueda} placeholder="Buscar por DNI, apellido o nombre"
             onChange={(e) => {
@@ -267,18 +297,28 @@ export default function Pacientes() {
             }}
             aria-label="Buscar paciente"
           />
-          <select
-            value={estado} aria-label="Filtrar por estado"
-            onChange={(e) => {
-              setEstado(e.target.value);
-              setPagina(1);
-            }}
-          >
-            <option value="todos">Todos</option>
-            <option value="activos">Activos</option>
-            <option value="baja">De baja</option>
+          <select value={estado} aria-label="Filtrar por estado" onChange={cambiarFiltro(setEstado)}>
+            <option value="todos">Estado: todos</option>
+            <option value="activos">Solo activos</option>
+            <option value="baja">Solo de baja</option>
           </select>
-        </div>
+          <select value={cobertura} aria-label="Filtrar por cobertura" onChange={cambiarFiltro(setCobertura)}>
+            <option value="">Cobertura: todas</option>
+            <option value="sin">Sin cobertura</option>
+            {coberturas.map((c) => <option key={c} value={c}>{c}</option>)}
+          </select>
+          <select value={edadF} aria-label="Filtrar por edad" onChange={cambiarFiltro(setEdadF)}>
+            <option value="">Edad: todas</option>
+            <option value="chicos">Menores de 18</option>
+            <option value="adultos">De 18 a 64</option>
+            <option value="mayores">65 o más</option>
+          </select>
+          <select value={email} aria-label="Filtrar por email" onChange={cambiarFiltro(setEmail)}>
+            <option value="">Email: todos</option>
+            <option value="con">Con email (reciben recordatorios)</option>
+            <option value="sin">Sin email</option>
+          </select>
+        </Filtros>
 
         {!hayBusqueda ? (
           <p className="suave">

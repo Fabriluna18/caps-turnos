@@ -4,6 +4,8 @@ import { CalendarPlus, Clock } from 'lucide-react';
 import { apiFetch } from '../api/client';
 import { mensajeDeError } from '../api/errores';
 import Avatar from '../components/Avatar';
+import Encabezado from '../components/Encabezado';
+import Filtros from '../components/Filtros';
 import { DIAS_CORTOS, DIAS_LARGOS, diaDeSemana, formatoFecha } from '../fechas';
 
 const normalizar = (t) => String(t).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
@@ -14,6 +16,8 @@ export default function MedicosPaciente() {
   const [cargado, setCargado] = useState(false);
   const [texto, setTexto] = useState('');
   const [especialidad, setEspecialidad] = useState('');
+  const [dia, setDia] = useState('');
+  const [soloLibres, setSoloLibres] = useState(false);
   const [abierto, setAbierto] = useState(null);
   const [horarios, setHorarios] = useState({});
   const [error, setError] = useState('');
@@ -46,28 +50,47 @@ export default function MedicosPaciente() {
   const q = normalizar(texto.trim());
   const visibles = medicos.filter((m) => {
     if (especialidad && String(m.especialidad_id) !== especialidad) return false;
+    if (dia && !m.dias.includes(Number(dia))) return false;
+    if (soloLibres && !m.proximo) return false;
     if (!q) return true;
     return normalizar(`${m.apellido} ${m.nombre} ${m.especialidad}`).includes(q);
   });
+  const hayFiltro = Boolean(texto || especialidad || dia || soloLibres);
 
   return (
     <>
-      <h1>Médicos</h1>
-      <p className="suave">Conocé a los profesionales, sus días de atención y cuándo tienen el próximo turno libre.</p>
+      <Encabezado
+        titulo="Médicos"
+        subtitulo="Conocé a los profesionales, sus días de atención y cuándo tienen el próximo turno libre."
+      />
       {error && <p className="error" role="alert">{error}</p>}
 
-      <div className="filtros">
+      <Filtros
+        clase="de-a-dos" hayFiltro={hayFiltro}
+        onLimpiar={() => { setTexto(''); setEspecialidad(''); setDia(''); setSoloLibres(false); }}
+      >
         <input
           type="search" value={texto} onChange={(e) => setTexto(e.target.value)}
           placeholder="Buscar por apellido, nombre o especialidad" aria-label="Buscar médico"
         />
         <select value={especialidad} onChange={(e) => setEspecialidad(e.target.value)} aria-label="Especialidad">
-          <option value="">Todas las especialidades</option>
+          <option value="">Especialidad: todas</option>
           {especialidades.map((e) => (
             <option key={e.id} value={e.id}>{e.nombre}</option>
           ))}
         </select>
-      </div>
+        <select value={dia} onChange={(e) => setDia(e.target.value)} aria-label="Día que atiende">
+          <option value="">Día: cualquiera</option>
+          {DIAS_LARGOS.map((d, i) => <option key={d} value={i + 1}>Atiende los {d.toLowerCase()}</option>)}
+        </select>
+        <label className="check-filtro">
+          <input type="checkbox" checked={soloLibres} onChange={(e) => setSoloLibres(e.target.checked)} />
+          Solo con turnos libres
+        </label>
+      </Filtros>
+      {cargado && hayFiltro && visibles.length > 0 && (
+        <p className="resultados">Mostrando {visibles.length} de {medicos.length} médicos</p>
+      )}
 
       {!cargado && <p className="suave">Cargando...</p>}
       {cargado && visibles.length === 0 && !error && (

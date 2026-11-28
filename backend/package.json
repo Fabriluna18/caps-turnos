@@ -13,6 +13,7 @@
     "probar:doble-reserva": "node scripts/probar-doble-reserva.js",
     "probar:permisos": "node scripts/probar-permisos.js",
     "demo:completo": "node scripts/crear-datos-ejemplo.js",
+    "demo:historial": "node scripts/crear-historial-demo.js",
     "instalar": "node scripts/instalar.js",
     "copia": "node scripts/copia-seguridad.js"
   },

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { CalendarDays, FileText } from 'lucide-react';
+import { CalendarDays, CalendarOff, FileText } from 'lucide-react';
 import { apiFetch } from '../api/client';
 import { mensajeDeError } from '../api/errores';
 import { usuarioActual } from '../auth';
@@ -83,6 +83,7 @@ export default function InicioMedico() {
           <div className="acciones">
             <Link className="boton" to="/medico/agenda"><CalendarDays size={16} /> Ir a la agenda</Link>
             <Link className="boton secundario" to="/medico/recetas"><FileText size={16} /> Mis recetas</Link>
+            <Link className="boton secundario" to="/medico/ausencias"><CalendarOff size={16} /> Avisar que no voy</Link>
           </div>
         </>
       )}

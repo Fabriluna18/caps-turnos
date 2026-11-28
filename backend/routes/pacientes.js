@@ -98,6 +98,23 @@ router.get('/', async (req, res) => {
   if (estado === 'activos') condiciones.push('u.activo = 1');
   if (estado === 'baja') condiciones.push('u.activo = 0');
 
+  // Filtros extra: cobertura ('sin' = sin cobertura cargada), edad y si tiene email
+  const cobertura = typeof req.query.cobertura === 'string' ? req.query.cobertura.trim().slice(0, 80) : '';
+  if (cobertura === 'sin') {
+    condiciones.push("(p.cobertura IS NULL OR p.cobertura = '' OR p.cobertura = 'Sin cobertura')");
+  } else if (cobertura) {
+    condiciones.push('p.cobertura = ?');
+    valores.push(cobertura);
+  }
+  const EDADES = {
+    chicos: 'TIMESTAMPDIFF(YEAR, p.fecha_nacimiento, CURDATE()) < 18',
+    adultos: 'TIMESTAMPDIFF(YEAR, p.fecha_nacimiento, CURDATE()) BETWEEN 18 AND 64',
+    mayores: 'TIMESTAMPDIFF(YEAR, p.fecha_nacimiento, CURDATE()) >= 65',
+  };
+  if (EDADES[req.query.edad]) condiciones.push(EDADES[req.query.edad]);
+  if (req.query.email === 'con') condiciones.push("u.email IS NOT NULL AND u.email <> ''");
+  if (req.query.email === 'sin') condiciones.push("(u.email IS NULL OR u.email = '')");
+
   const donde = condiciones.join(' AND ');
 
   try {
@@ -110,6 +127,19 @@ router.get('/', async (req, res) => {
       [...valores, POR_PAGINA, (pagina - 1) * POR_PAGINA]
     );
     res.json({ total: Number(total), pagina, por_pagina: POR_PAGINA, items: filas.map(conActivo) });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Error del servidor' });
+  }
+});
+
+// Coberturas cargadas (para el filtro de la lista)
+router.get('/coberturas', async (req, res) => {
+  try {
+    const [filas] = await pool.query(
+      "SELECT DISTINCT cobertura FROM pacientes WHERE cobertura IS NOT NULL AND cobertura <> '' AND cobertura <> 'Sin cobertura' ORDER BY cobertura LIMIT 100"
+    );
+    res.json(filas.map((f) => f.cobertura));
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Error del servidor' });

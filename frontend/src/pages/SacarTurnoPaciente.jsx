@@ -4,6 +4,7 @@ import { apiFetch } from '../api/client';
 import { mensajeDeError } from '../api/errores';
 import BuscadorMedico from '../components/BuscadorMedico';
 import CalendarioDisponibilidad from '../components/CalendarioDisponibilidad';
+import Encabezado from '../components/Encabezado';
 import HorariosDelDia from '../components/HorariosDelDia';
 import { diaDeSemana, formatoFecha } from '../fechas';
 
@@ -100,8 +101,7 @@ export default function SacarTurnoPaciente() {
 
   return (
     <>
-      <h1>Sacar turno</h1>
-      <p className="suave">Elegí el médico, el día y el horario. Podés tener hasta 5 turnos a la vez.</p>
+      <Encabezado titulo="Sacar turno" subtitulo="Elegí el médico, el día y el horario. Podés tener hasta 5 turnos a la vez." />
       {error && <p className="error" role="alert">{error}</p>}
 
       <div className="panel">

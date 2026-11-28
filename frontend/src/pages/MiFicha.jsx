@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { AlertTriangle } from 'lucide-react';
 import { apiFetch } from '../api/client';
 import { mensajeDeError } from '../api/errores';
+import Encabezado from '../components/Encabezado';
 
 const CAMPOS = [
   ['enfermedades', 'Enfermedades'],
@@ -23,8 +24,7 @@ export default function MiFicha() {
 
   return (
     <>
-      <h1>Mi ficha</h1>
-      <p className="suave">Lo que cargaron tus médicos. Si algo no es correcto, avisale en tu próxima consulta.</p>
+      <Encabezado titulo="Mi ficha" subtitulo="Lo que cargaron tus médicos. Si algo no es correcto, avisale en tu próxima consulta." />
       {error && <p className="error" role="alert">{error}</p>}
       {ficha === undefined && !error && <p className="suave">Cargando...</p>}
       {ficha === null && <p className="suave">Todavía no tenés una ficha cargada.</p>}

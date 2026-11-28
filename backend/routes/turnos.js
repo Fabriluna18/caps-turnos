@@ -124,6 +124,14 @@ router.get('/', async (req, res) => {
     condiciones.push('t.estado = ?');
     valores.push(estado);
   }
+  const especialidadId = idValido(req.query.especialidad_id);
+  if (especialidadId) {
+    condiciones.push('m.especialidad_id = ?');
+    valores.push(especialidadId);
+  }
+  // Franja: mañana (antes de las 13) o tarde
+  if (req.query.franja === 'manana') condiciones.push("t.hora < '13:00:00'");
+  if (req.query.franja === 'tarde') condiciones.push("t.hora >= '13:00:00'");
   if (q) {
     const patron = `%${escaparLike(q)}%`;
     const digitos = q.replace(/\D/g, '');
@@ -139,7 +147,8 @@ router.get('/', async (req, res) => {
 
   try {
     const [[{ total }]] = await pool.query(
-      `SELECT COUNT(*) AS total FROM turnos t JOIN usuarios up ON up.id = t.paciente_id WHERE ${donde}`,
+      `SELECT COUNT(*) AS total FROM turnos t JOIN usuarios up ON up.id = t.paciente_id
+       JOIN medicos m ON m.usuario_id = t.medico_id WHERE ${donde}`,
       valores
     );
     const [filas] = await pool.query(

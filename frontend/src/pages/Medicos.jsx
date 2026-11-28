@@ -2,7 +2,9 @@ import { useEffect, useState } from 'react';
 import { KeyRound, Pencil, Search, UserCheck, UserPlus, UserX } from 'lucide-react';
 import { apiFetch } from '../api/client';
 import { mensajeDeError } from '../api/errores';
+import Encabezado from '../components/Encabezado';
 import Especialidades from '../components/Especialidades';
+import Filtros from '../components/Filtros';
 import VentanaFlotante from '../components/VentanaFlotante';
 
 const VACIO = { dni: '', nombre: '', apellido: '', email: '', telefono: '', matricula: '', especialidad_id: '' };
@@ -151,10 +153,9 @@ export default function Medicos() {
 
   return (
     <>
-      <div className="titulo-pagina">
-        <h1>Médicos</h1>
+      <Encabezado titulo="Médicos" subtitulo="El equipo médico del CAPS: alta, edición, baja y claves de ingreso. Abajo, las especialidades.">
         <button className="boton" onClick={nuevo}><UserPlus size={18} /> Nuevo médico</button>
-      </div>
+      </Encabezado>
       {error && !formAbierto && <p className="error" role="alert">{error}</p>}
       {ok && <p className="exito" role="status">{ok}</p>}
 
@@ -225,23 +226,26 @@ export default function Medicos() {
       )}
 
       <div className="panel">
-        <h2>Equipo médico ({hayFiltro ? `${filtrados.length} de ${medicos.length}` : medicos.length})</h2>
+        <h2>Equipo médico</h2>
+        <p className="panel-subtitulo">
+          {hayFiltro ? `Mostrando ${filtrados.length} de ${medicos.length} médicos` : `${medicos.length} médicos cargados`}
+        </p>
         {medicos.length > 0 && (
-          <div className="filtros de-a-dos">
+          <Filtros clase="de-a-dos" hayFiltro={hayFiltro} onLimpiar={() => { setBusqueda(''); setFiltroEsp(''); setFiltroEstado('todos'); }}>
             <input
               type="search" value={busqueda} onChange={(e) => setBusqueda(e.target.value)}
               placeholder="DNI, apellido, nombre o matrícula" aria-label="Buscar médico"
             />
             <select value={filtroEsp} onChange={(e) => setFiltroEsp(e.target.value)} aria-label="Filtrar por especialidad">
-              <option value="">Especialidades</option>
+              <option value="">Especialidad: todas</option>
               {especialidades.map((esp) => <option key={esp.id} value={esp.id}>{esp.nombre}</option>)}
             </select>
             <select value={filtroEstado} onChange={(e) => setFiltroEstado(e.target.value)} aria-label="Filtrar por estado">
               <option value="todos">Estado: todos</option>
-              <option value="activos">Activos</option>
-              <option value="baja">De baja</option>
+              <option value="activos">Solo activos</option>
+              <option value="baja">Solo de baja</option>
             </select>
-          </div>
+          </Filtros>
         )}
         {medicos.length === 0 ? (
           <p className="suave">Todavía no cargaste médicos.</p>

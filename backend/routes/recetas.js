@@ -1,7 +1,7 @@
 const express = require('express');
 const pool = require('../db');
 const { verificarToken, permitir } = require('../middleware/auth');
-const { ahora } = require('../fechas');
+const { ahora, fechaValida } = require('../fechas');
 
 const router = express.Router();
 
@@ -97,17 +97,31 @@ router.get('/', async (req, res) => {
   const condiciones = [condicionDueno(req.usuario)];
   const valores = [req.usuario.id];
 
-  const q = req.usuario.rol === 'medico' ? texto(req.query.q).slice(0, 60) : '';
+  // Búsqueda: el médico, por paciente; el paciente, por médico. Los dos, por medicamento o diagnóstico.
+  const q = texto(req.query.q).slice(0, 60);
   if (q) {
     const patron = `%${escaparLike(q)}%`;
-    const partes = ['up.apellido LIKE ?', 'up.nombre LIKE ?', "CONCAT(up.apellido, ' ', up.nombre) LIKE ?"];
-    valores.push(patron, patron, patron);
+    const persona = req.usuario.rol === 'medico' ? 'up' : 'um';
+    const partes = [
+      `${persona}.apellido LIKE ?`, `${persona}.nombre LIKE ?`, `CONCAT(${persona}.apellido, ' ', ${persona}.nombre) LIKE ?`,
+      'r.diagnostico LIKE ?',
+      'EXISTS (SELECT 1 FROM receta_items i WHERE i.receta_id = r.id AND i.medicamento LIKE ?)',
+    ];
+    valores.push(patron, patron, patron, patron, patron);
     const digitos = q.replace(/\D/g, '');
-    if (digitos) {
+    if (digitos && req.usuario.rol === 'medico') {
       partes.push('up.dni LIKE ?');
       valores.push(`%${digitos}%`);
     }
     condiciones.push(`(${partes.join(' OR ')})`);
+  }
+  if (fechaValida(req.query.desde)) {
+    condiciones.push('r.fecha >= ?');
+    valores.push(req.query.desde);
+  }
+  if (fechaValida(req.query.hasta)) {
+    condiciones.push('r.fecha <= ?');
+    valores.push(req.query.hasta);
   }
   const turnoId = idValido(req.query.turno_id);
   if (turnoId) {
@@ -125,11 +139,13 @@ router.get('/', async (req, res) => {
   try {
     const [[cuentas]] = await pool.query(
       `SELECT COALESCE(SUM(r.anulada = 0), 0) AS vigentes, COALESCE(SUM(r.anulada = 1), 0) AS anuladas
-       FROM recetas r JOIN usuarios up ON up.id = r.paciente_id WHERE ${dondeSinEstado}`,
+       FROM recetas r JOIN usuarios up ON up.id = r.paciente_id JOIN usuarios um ON um.id = r.medico_id
+       WHERE ${dondeSinEstado}`,
       valores
     );
     const [[{ total }]] = await pool.query(
-      `SELECT COUNT(*) AS total FROM recetas r JOIN usuarios up ON up.id = r.paciente_id WHERE ${donde}`,
+      `SELECT COUNT(*) AS total FROM recetas r JOIN usuarios up ON up.id = r.paciente_id
+       JOIN usuarios um ON um.id = r.medico_id WHERE ${donde}`,
       valores
     );
     const [filas] = await pool.query(

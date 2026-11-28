@@ -1,7 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { CalendarPlus } from 'lucide-react';
 import { apiFetch } from '../api/client';
 import { mensajeDeError } from '../api/errores';
+import Encabezado from '../components/Encabezado';
+import Filtros from '../components/Filtros';
 import { ESTADOS } from '../estados';
 import { diaDeSemana, formatoFecha } from '../fechas';
 
@@ -10,6 +13,12 @@ const TABS = [
   { id: 'historial', texto: 'Historial' },
   { id: 'cancelados', texto: 'Cancelados' },
 ];
+
+// Qué estados se pueden filtrar en cada pestaña (en "Cancelados" todos son iguales)
+const ESTADOS_TAB = {
+  proximos: ['pendiente', 'confirmado'],
+  historial: ['atendido', 'ausente'],
+};
 
 const VACIO = {
   proximos: 'No tenés turnos próximos.',
@@ -25,19 +34,34 @@ export default function MisTurnos() {
   const [ok, setOk] = useState('');
   const [cancelando, setCancelando] = useState(null); // id del turno que pide confirmación
   const [trabajando, setTrabajando] = useState(false);
+  const [especialidades, setEspecialidades] = useState([]);
+  const [especialidad, setEspecialidad] = useState('');
+  const [estado, setEstado] = useState('');
 
   const cargar = useCallback(() => {
-    apiFetch(`/paciente/turnos?tab=${tab}&pagina=${pagina}`)
+    const params = new URLSearchParams({ tab, pagina: String(pagina) });
+    if (especialidad) params.set('especialidad_id', especialidad);
+    if (estado) params.set('estado', estado);
+    apiFetch(`/paciente/turnos?${params}`)
       .then((r) => {
         setDatos(r);
         setError('');
       })
       .catch((err) => setError(mensajeDeError(err)));
-  }, [tab, pagina]);
+  }, [tab, pagina, especialidad, estado]);
 
   useEffect(() => {
     cargar();
   }, [cargar]);
+
+  useEffect(() => {
+    apiFetch('/especialidades').then((e) => setEspecialidades(e)).catch(() => setEspecialidades([]));
+  }, []);
+
+  const cambiarFiltro = (set) => (e) => {
+    set(e.target.value);
+    irPagina(1);
+  };
 
   // Al cambiar de pestaña o de página se muestra "Cargando..." hasta que llegan los turnos
   const irPagina = (p) => {
@@ -47,6 +71,7 @@ export default function MisTurnos() {
 
   const cambiarTab = (id) => {
     setTab(id);
+    setEstado(''); // los estados posibles cambian según la pestaña
     irPagina(1);
     setCancelando(null);
     setOk('');
@@ -74,27 +99,38 @@ export default function MisTurnos() {
 
   return (
     <>
-      <h1>Mis turnos</h1>
-      <p className="suave">Tus turnos próximos, tu historial y los que cancelaste.</p>
+      <Encabezado titulo="Mis turnos" subtitulo="Tus turnos próximos, tu historial y los que cancelaste.">
+        <Link className="boton" to="/paciente/sacar-turno"><CalendarPlus size={18} /> Sacar turno</Link>
+      </Encabezado>
       {error && <p className="error" role="alert">{error}</p>}
       {ok && <p className="exito" role="status">{ok}</p>}
 
-      <div className="acciones" role="tablist" style={{ marginTop: 0 }}>
+      <div className="pestanas" role="tablist">
         {TABS.map((t) => (
-          <button
-            key={t.id} role="tab" aria-selected={tab === t.id}
-            className={tab === t.id ? 'boton-chico' : 'boton-chico secundario'}
-            style={tab === t.id ? { fontWeight: 700 } : undefined}
-            onClick={() => cambiarTab(t.id)}
-          >
+          <button key={t.id} role="tab" aria-selected={tab === t.id} className={tab === t.id ? 'activa' : ''} onClick={() => cambiarTab(t.id)}>
             {t.texto}
           </button>
         ))}
-        <Link className="boton-chico" to="/paciente/sacar-turno">Sacar turno</Link>
       </div>
 
+      <Filtros
+        clase="de-a-dos" hayFiltro={Boolean(especialidad || estado)}
+        onLimpiar={() => { setEspecialidad(''); setEstado(''); irPagina(1); }}
+      >
+        <select value={especialidad} onChange={cambiarFiltro(setEspecialidad)} aria-label="Especialidad">
+          <option value="">Especialidad: todas</option>
+          {especialidades.map((e) => <option key={e.id} value={e.id}>{e.nombre}</option>)}
+        </select>
+        {ESTADOS_TAB[tab] && (
+          <select value={estado} onChange={cambiarFiltro(setEstado)} aria-label="Estado">
+            <option value="">Estado: todos</option>
+            {ESTADOS_TAB[tab].map((e) => <option key={e} value={e}>{ESTADOS[e]}</option>)}
+          </select>
+        )}
+      </Filtros>
+
       {!datos && !error && <p className="suave">Cargando...</p>}
-      {datos && datos.items.length === 0 && <p className="suave">{VACIO[tab]}</p>}
+      {datos && datos.items.length === 0 && <p className="suave">{especialidad || estado ? 'No hay turnos que coincidan con el filtro.' : VACIO[tab]}</p>}
 
       {datos && datos.items.length > 0 && (
         <div className="panel">

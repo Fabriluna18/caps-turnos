@@ -13,6 +13,7 @@ import InicioSecretaria from './pages/InicioSecretaria';
 import Login from './pages/Login';
 import Medicos from './pages/Medicos';
 import MiFicha from './pages/MiFicha';
+import MisAusencias from './pages/MisAusencias';
 import MisTurnos from './pages/MisTurnos';
 import MedicosPaciente from './pages/MedicosPaciente';
 import Olvide from './pages/Olvide';
@@ -38,6 +39,7 @@ const PAGINAS = {
   'medico/agenda': AgendaMedico,
   'medico/recetas': Recetas,
   'medico/pacientes': PacientesMedico,
+  'medico/ausencias': MisAusencias,
   'medico/perfil': Perfil,
   'paciente/medicos': MedicosPaciente,
   'paciente/sacar-turno': SacarTurnoPaciente,

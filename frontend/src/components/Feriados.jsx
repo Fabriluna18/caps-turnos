@@ -3,8 +3,12 @@ import { Ban, Pencil, RotateCcw } from 'lucide-react';
 import { apiFetch } from '../api/client';
 import { mensajeDeError } from '../api/errores';
 import { diaDeSemana, formatoFecha, hoyISO } from '../fechas';
+import Filtros from './Filtros';
 
 export default function Feriados() {
+  const [texto, setTexto] = useState('');
+  const [estado, setEstado] = useState('todos');
+  const [cuando, setCuando] = useState('todos');
   const [feriados, setFeriados] = useState([]);
   const [cargado, setCargado] = useState(false);
   const [fecha, setFecha] = useState(hoyISO());
@@ -71,16 +75,28 @@ export default function Feriados() {
     }
   };
 
+  const hoy = hoyISO();
+  const q = texto.trim().toLowerCase();
+  const visibles = feriados.filter((f) => {
+    if (estado === 'vigentes' && !f.activo) return false;
+    if (estado === 'desactivados' && f.activo) return false;
+    if (cuando === 'proximos' && f.fecha < hoy) return false;
+    if (cuando === 'pasados' && f.fecha >= hoy) return false;
+    return !q || f.descripcion.toLowerCase().includes(q);
+  });
+  const hayFiltro = Boolean(q || estado !== 'todos' || cuando !== 'todos');
+
   return (
     <div className="panel">
       <h2>Feriados y días sin atención</h2>
-      <p className="suave" style={{ marginTop: 0 }}>
+      <p className="panel-subtitulo">
         Valen para todos los médicos: ese día el CAPS no da turnos. Los feriados trasladables cambian de fecha cada año,
         así que se cargan a mano. Podés corregirlos con <strong>Editar</strong> y pausarlos con <strong>Desactivar</strong>.
       </p>
       {error && <p className="error" role="alert">{error}</p>}
       {ok && <p className="exito" role="status">{ok}</p>}
 
+      <h3>{editando ? 'Editar feriado' : 'Agregar feriado'}</h3>
       <form className="fila-form" onSubmit={guardar}>
         <input type="date" value={fecha} onChange={(e) => setFecha(e.target.value)} required />
         <input
@@ -93,16 +109,34 @@ export default function Feriados() {
         )}
       </form>
 
+      <h3 style={{ marginTop: 24 }}>Feriados cargados</h3>
+      {cargado && feriados.length > 0 && (
+        <Filtros clase="de-a-dos" hayFiltro={hayFiltro} onLimpiar={() => { setTexto(''); setEstado('todos'); setCuando('todos'); }}>
+          <input type="search" value={texto} onChange={(e) => setTexto(e.target.value)} placeholder="Buscar por descripción" aria-label="Buscar feriado" />
+          <select value={cuando} onChange={(e) => setCuando(e.target.value)} aria-label="Filtrar por fecha">
+            <option value="todos">Fecha: todos</option>
+            <option value="proximos">Solo próximos</option>
+            <option value="pasados">Solo pasados</option>
+          </select>
+          <select value={estado} onChange={(e) => setEstado(e.target.value)} aria-label="Filtrar por estado">
+            <option value="todos">Estado: todos</option>
+            <option value="vigentes">Solo vigentes</option>
+            <option value="desactivados">Solo desactivados</option>
+          </select>
+        </Filtros>
+      )}
       {!cargado ? null : feriados.length === 0 ? (
-        <p className="suave" style={{ marginTop: 16 }}>No hay feriados cargados.</p>
+        <p className="suave">No hay feriados cargados.</p>
+      ) : visibles.length === 0 ? (
+        <p className="suave">No hay feriados que coincidan con el filtro.</p>
       ) : (
-        <div className="tabla-scroll" style={{ marginTop: 16 }}>
+        <div className="tabla-scroll">
           <table className="tabla">
             <thead>
               <tr><th>Fecha</th><th>Descripción</th><th>Estado</th><th></th></tr>
             </thead>
             <tbody>
-              {feriados.map((f) => (
+              {visibles.map((f) => (
                 <tr key={f.id} className={f.activo ? '' : 'fila-baja'}>
                   <td style={{ whiteSpace: 'nowrap' }}>
                     <strong>{formatoFecha(f.fecha)}</strong> <span className="suave">{diaDeSemana(f.fecha)}</span>

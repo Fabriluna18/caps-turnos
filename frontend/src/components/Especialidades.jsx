@@ -1,8 +1,11 @@
 import { useState } from 'react';
 import { apiFetch } from '../api/client';
 import { mensajeDeError } from '../api/errores';
+import Filtros from './Filtros';
 
 export default function Especialidades({ lista, onCambio }) {
+  const [texto, setTexto] = useState('');
+  const [estado, setEstado] = useState('todas');
   const [nombre, setNombre] = useState('');
   const [editando, setEditando] = useState(null);
   const [nombreEdicion, setNombreEdicion] = useState('');
@@ -73,18 +76,38 @@ export default function Especialidades({ lista, onCambio }) {
     }
   };
 
+  const q = texto.trim().toLowerCase();
+  const visibles = lista.filter((esp) => {
+    if (estado === 'activas' && !esp.activa) return false;
+    if (estado === 'inactivas' && esp.activa) return false;
+    return !q || esp.nombre.toLowerCase().includes(q);
+  });
+  const hayFiltro = Boolean(q || estado !== 'todas');
+
   return (
     <div className="panel">
       <h2>Especialidades</h2>
-      <p className="suave" style={{ marginTop: 0 }}>
+      <p className="panel-subtitulo">
         Con <strong>Editar</strong> corregís el nombre, la desactivás o la borrás. Borrarla solo se puede si ningún médico
         la usó nunca. El número indica cuántos médicos activos la tienen.
       </p>
       {error && <p className="error" role="alert">{error}</p>}
       {ok && <p className="exito" role="status">{ok}</p>}
 
+      {lista.length > 4 && (
+        <Filtros clase="de-a-dos" hayFiltro={hayFiltro} onLimpiar={() => { setTexto(''); setEstado('todas'); }}>
+          <input type="search" value={texto} onChange={(e) => setTexto(e.target.value)} placeholder="Buscar especialidad" aria-label="Buscar especialidad" />
+          <select value={estado} onChange={(e) => setEstado(e.target.value)} aria-label="Filtrar por estado">
+            <option value="todas">Estado: todas</option>
+            <option value="activas">Solo activas</option>
+            <option value="inactivas">Solo desactivadas</option>
+          </select>
+        </Filtros>
+      )}
+      {visibles.length === 0 && <p className="suave">No hay especialidades que coincidan.</p>}
+
       <ul className="chips">
-        {lista.map((esp) => (
+        {visibles.map((esp) => (
           <li key={esp.id} className={esp.activa ? '' : 'inactiva'}>
             {esp.nombre} <small>({esp.medicos})</small>
             <button type="button" className="chip-accion" onClick={() => abrirEdicion(esp)}>Editar</button>
@@ -109,7 +132,8 @@ export default function Especialidades({ lista, onCambio }) {
         </div>
       )}
 
-      <form className="fila-form" onSubmit={agregar} style={{ marginTop: 14 }}>
+      <h3>Agregar especialidad</h3>
+      <form className="fila-form" onSubmit={agregar}>
         <input
           value={nombre} onChange={(e) => setNombre(e.target.value)}
           placeholder="Nueva especialidad" maxLength={60} required

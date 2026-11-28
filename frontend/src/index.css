@@ -709,3 +709,63 @@ body:has(.ventana[open]) { overflow: hidden; } /* la página de atrás no se mue
 /* Título de la pantalla con su botón principal al lado (por ejemplo "Nuevo paciente") */
 .titulo-pagina { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 18px; }
 .titulo-pagina h1 { margin: 0; }
+
+/* =========================================================
+   Pedidos de la ingeniera (28/11): "nada junto, todo separado"
+   ========================================================= */
+
+/* Encabezado de pantalla: título, subtítulo y botones, cada uno en su renglón,
+   con una línea abajo que lo separa del contenido */
+.encabezado { margin: 0 0 24px; padding-bottom: 20px; border-bottom: 1px solid var(--color-borde); }
+.encabezado h1 { margin: 0; }
+.encabezado-subtitulo { margin: 8px 0 0; color: var(--color-texto-suave); max-width: 70ch; }
+.encabezado-acciones { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
+
+/* Título de un panel con su explicación debajo */
+.panel h2 + .panel-subtitulo { margin: -8px 0 16px; color: var(--color-texto-suave); font-size: 0.9rem; }
+
+/* Caja de filtros: fondo suave, título "Filtrar" y "Limpiar filtros" */
+.caja-filtros {
+  background: var(--color-superficie-2);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio);
+  padding: 14px 16px 16px;
+  margin: 0 0 20px;
+}
+.caja-filtros-cab { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 28px; margin-bottom: 10px; }
+.caja-filtros-cab > span {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 0.78rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--color-texto-suave);
+}
+.caja-filtros .filtros { margin-bottom: 0; align-items: flex-end; }
+.caja-filtros .filtros > select { flex: 1 1 170px; }
+.caja-filtros .filtros > input[type="search"] { flex: 2 1 280px; }
+.caja-filtros .filtros > .campo { flex: 1 1 170px; }
+.caja-filtros .filtros > .campo input, .caja-filtros .filtros > .campo select { width: 100%; }
+.check-filtro {
+  display: inline-flex; align-items: center; gap: 8px; min-height: 46px; padding: 0 14px;
+  background: var(--color-superficie); border: 1px solid var(--color-borde-fuerte); border-radius: var(--radio);
+  font-size: 0.92rem; cursor: pointer; white-space: nowrap;
+}
+.check-filtro:has(input:checked) { border-color: var(--color-primario); background: var(--color-primario-suave); color: var(--color-primario-oscuro); font-weight: 600; }
+.limpiar-filtros {
+  display: inline-flex; align-items: center; gap: 4px;
+  border: 0; background: none; padding: 4px 6px; border-radius: 8px;
+  font: inherit; font-size: 0.84rem; font-weight: 600; color: var(--color-primario); cursor: pointer;
+}
+.limpiar-filtros:hover { background: var(--color-primario-suave); }
+
+/* Contador de resultados ("12 de 40") debajo de los filtros */
+.resultados { margin: 0 0 12px; font-size: 0.88rem; color: var(--color-texto-suave); }
+
+@media (max-width: 639px) {
+  .encabezado { margin-bottom: 18px; padding-bottom: 16px; }
+  .encabezado-acciones > .boton { flex: 1 1 100%; }
+  .caja-filtros { padding: 12px; }
+  /* Desplegables con letra un poco más chica, para que el texto entre completo */
+  .caja-filtros select { font-size: 0.88rem; padding-left: 10px; padding-right: 4px; }
+  .caja-filtros .filtros > select, .caja-filtros .filtros > .campo { flex: 1 1 130px; min-width: 0; }
+  .caja-filtros .filtros > input[type="search"] { flex: 1 1 100%; min-width: 0; }
+  .caja-filtros .filtros > .check-filtro { flex: 1 1 140px; white-space: normal; }
+  .caja-filtros .filtros > .boton { flex: 1 1 130px; }
+}

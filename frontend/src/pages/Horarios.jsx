@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { apiFetch } from '../api/client';
 import { mensajeDeError } from '../api/errores';
 import BuscadorMedico from '../components/BuscadorMedico';
+import Encabezado from '../components/Encabezado';
 import Feriados from '../components/Feriados';
 import HorariosSemanales from '../components/HorariosSemanales';
 import Licencias from '../components/Licencias';
@@ -25,7 +26,10 @@ export default function Horarios() {
 
   return (
     <>
-      <h1>Horarios de atención</h1>
+      <Encabezado
+        titulo="Horarios de atención"
+        subtitulo="Elegí un médico para ver y cambiar sus horarios semanales y sus licencias. Abajo, los feriados del CAPS."
+      />
       {error && <p className="error" role="alert">{error}</p>}
 
       {cargado && medicos.length === 0 && !error && (
@@ -35,6 +39,7 @@ export default function Horarios() {
       {medicos.length > 0 && (
         <div className="panel">
           <h2>Médico</h2>
+          {!medico && <p className="panel-subtitulo">Buscalo por nombre o filtrá por especialidad.</p>}
           {medico ? (
             <div className="seleccion">
               <div>

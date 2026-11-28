@@ -1,5 +1,5 @@
 import {
-  BarChart3, CalendarDays, CalendarPlus, ClipboardList, Clock, FileText, LayoutDashboard, Stethoscope, UserCircle, Users,
+  BarChart3, CalendarDays, CalendarOff, CalendarPlus, ClipboardList, Clock, FileText, LayoutDashboard, Stethoscope, UserCircle, Users,
 } from 'lucide-react';
 
 // a: ruta dentro del rol ('' es el inicio). dia: cuándo se arma esa pantalla.
@@ -19,6 +19,7 @@ export const MENUS = {
     { a: 'agenda', texto: 'Agenda del día', corto: 'Agenda', icono: CalendarDays },
     { a: 'recetas', texto: 'Recetas', icono: FileText },
     { a: 'pacientes', texto: 'Pacientes', icono: Users },
+    { a: 'ausencias', texto: 'Mis ausencias', corto: 'Ausencias', icono: CalendarOff },
     { a: 'perfil', texto: 'Mi perfil', icono: UserCircle },
   ],
   paciente: [

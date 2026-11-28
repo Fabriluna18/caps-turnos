@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { apiFetch } from '../api/client';
 import { mensajeDeError } from '../api/errores';
+import Encabezado from '../components/Encabezado';
 import { edad, formatoFecha } from '../fechas';
 
 const ROLES = { secretaria: 'Secretaría', medico: 'Médico', paciente: 'Paciente' };
@@ -68,7 +69,7 @@ export default function Perfil() {
 
   return (
     <>
-      <h1>Mi perfil</h1>
+      <Encabezado titulo="Mi perfil" subtitulo="Tus datos de contacto y tu contraseña." />
       {error && <p className="error" role="alert">{error}</p>}
       {ok && <p className="exito" role="status">{ok}</p>}
 

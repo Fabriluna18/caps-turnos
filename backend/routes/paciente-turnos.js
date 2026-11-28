@@ -114,14 +114,28 @@ router.get('/', async (req, res) => {
   };
   const f = filtros[tab];
 
+  // Filtros opcionales: especialidad y estado (dentro de la pestaña elegida)
+  let donde = f.donde;
+  const valores = [...f.valores];
+  const especialidadId = idValido(req.query.especialidad_id);
+  if (especialidadId) {
+    donde += ' AND m.especialidad_id = ?';
+    valores.push(especialidadId);
+  }
+  if (['pendiente', 'confirmado', 'en_atencion', 'atendido', 'ausente'].includes(req.query.estado)) {
+    donde += ' AND t.estado = ?';
+    valores.push(req.query.estado);
+  }
+
   try {
     const [[{ total }]] = await pool.query(
-      `SELECT COUNT(*) AS total FROM turnos t WHERE t.paciente_id = ? AND ${f.donde}`,
-      [req.usuario.id, ...f.valores]
+      `SELECT COUNT(*) AS total FROM turnos t JOIN medicos m ON m.usuario_id = t.medico_id
+       WHERE t.paciente_id = ? AND ${donde}`,
+      [req.usuario.id, ...valores]
     );
     const [filas] = await pool.query(
-      `${SELECT} WHERE t.paciente_id = ? AND ${f.donde} ORDER BY ${f.orden} LIMIT ? OFFSET ?`,
-      [req.usuario.id, ...f.valores, POR_PAGINA, (pagina - 1) * POR_PAGINA]
+      `${SELECT} WHERE t.paciente_id = ? AND ${donde} ORDER BY ${f.orden} LIMIT ? OFFSET ?`,
+      [req.usuario.id, ...valores, POR_PAGINA, (pagina - 1) * POR_PAGINA]
     );
     res.json({ tab, total: Number(total), pagina, por_pagina: POR_PAGINA, items: filas.map(aTurno) });
   } catch (error) {

@@ -2,6 +2,7 @@ const express = require('express');
 const pool = require('../db');
 const { verificarToken, permitir } = require('../middleware/auth');
 const { ahora, fechaValida, diasEntre, sumarDias, horaSQL } = require('../fechas');
+const { listarLicencias, crearLicencia, cambiarEstadoLicencia } = require('../licencias');
 
 const router = express.Router();
 
@@ -235,6 +236,44 @@ router.get('/turnos/:id/historial', async (req, res) => {
       consultas: consultas.map((c) => ({ id: c.id, fecha: c.fecha, hora: c.hora.slice(0, 5), estado: c.estado, motivo: c.motivo, diagnostico: c.diagnostico, recetas: Number(c.recetas) })),
       recetas: recetas.map((r) => ({ ...r, anulada: Boolean(r.anulada) })),
     });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Error del servidor' });
+  }
+});
+
+// ---------- Mis ausencias: el médico avisa los días que no va ----------
+// Son licencias como las que carga la secretaría (mismas reglas, ver ../licencias.js),
+// pero siempre del propio médico y nunca en días que ya pasaron.
+
+router.get('/licencias', async (req, res) => {
+  try {
+    res.json(await listarLicencias(pool, req.usuario.id));
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Error del servidor' });
+  }
+});
+
+router.post('/licencias', async (req, res) => {
+  try {
+    const r = await crearLicencia(pool, req.usuario.id, req.body, { quien: 'medico', minimo: ahora().fecha });
+    if (r.error) return res.status(r.codigo).json({ error: r.error });
+    res.status(201).json({ mensaje: 'Ausencia cargada' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Error del servidor' });
+  }
+});
+
+router.put('/licencias/:id/estado', async (req, res) => {
+  const id = idValido(req.params.id);
+  if (!id) return res.status(400).json({ error: 'Ausencia inválida' });
+  if (typeof req.body.activa !== 'boolean') return res.status(400).json({ error: 'Falta indicar el estado' });
+  try {
+    const r = await cambiarEstadoLicencia(pool, id, req.body.activa, { soloMedicoId: req.usuario.id, quien: 'medico' });
+    if (r.error) return res.status(r.codigo).json({ error: r.error });
+    res.json({ activa: req.body.activa });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Error del servidor' });

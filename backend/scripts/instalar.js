@@ -118,6 +118,8 @@ async function main() {
 
   const completo = await preguntar('\n¿Cargar también los datos de ejemplo completos (6 médicos, 300 pacientes, 6 meses de turnos)? (s/N): ');
   if (completo.toLowerCase() === 's') correrScript('crear-datos-ejemplo.js');
+  // Historial de la médica y la paciente demo (consultas, recetas, fichas), para poder mostrarlas
+  correrScript('crear-historial-demo.js');
 
   const definitiva = await preguntar(
     '\n¿Es la instalación definitiva en la PC del CAPS? Si decís que sí, todos tendrán que cambiar la clave "demo1234" al entrar. (s/N): '

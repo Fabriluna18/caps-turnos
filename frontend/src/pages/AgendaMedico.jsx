@@ -5,6 +5,8 @@ import { apiFetch } from '../api/client';
 import { mensajeDeError } from '../api/errores';
 import FichaClinica from '../components/FichaClinica';
 import HistorialPaciente from '../components/HistorialPaciente';
+import Encabezado from '../components/Encabezado';
+import Filtros from '../components/Filtros';
 import RecetaForm from '../components/RecetaForm';
 import { ESTADOS } from '../estados';
 import { diaDeSemana, formatoFecha, hoyISO, sumarDias } from '../fechas';
@@ -19,6 +21,8 @@ export default function AgendaMedico() {
   const [recetaHecha, setRecetaHecha] = useState(null);
   const [historialDe, setHistorialDe] = useState(null); // id del turno cuyo historial se muestra
   const [fichaDe, setFichaDe] = useState(null); // id del paciente cuya ficha se muestra
+  const [texto, setTexto] = useState('');
+  const [filtroEstado, setFiltroEstado] = useState('');
 
   const cargar = useCallback(() => {
     apiFetch(`/medico/agenda?fecha=${fecha}`)
@@ -55,6 +59,16 @@ export default function AgendaMedico() {
     return () => clearInterval(id);
   }, [fecha, cargar]);
 
+  // Filtros (del lado del navegador, sobre los turnos del día)
+  const q = texto.trim().normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+  const visibles = (agenda?.turnos || []).filter((t) => {
+    if (filtroEstado === 'esperando' && !['pendiente', 'confirmado'].includes(t.estado)) return false;
+    if (filtroEstado && filtroEstado !== 'esperando' && t.estado !== filtroEstado) return false;
+    if (!q) return true;
+    const p = t.paciente;
+    return `${p.apellido} ${p.nombre} ${p.nombre} ${p.apellido} ${p.dni}`.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().includes(q);
+  });
+
   const marcar = async (t, estado) => {
     setError('');
     setTrabajando(true);
@@ -72,7 +86,7 @@ export default function AgendaMedico() {
 
   return (
     <>
-      <h1>Agenda del día</h1>
+      <Encabezado titulo="Agenda del día" subtitulo="Tus turnos del día: atendé, marcá ausentes, mirá el historial y hacé recetas." />
       <div className="acciones" style={{ marginTop: 0 }}>
         <button className="boton-chico" onClick={() => cambiarFecha(sumarDias(fecha, -1))} aria-label="Día anterior">
           <ChevronLeft size={16} />
@@ -108,13 +122,25 @@ export default function AgendaMedico() {
           )}
 
           {agenda.turnos.length > 0 && (
+            <Filtros clase="de-a-dos" hayFiltro={Boolean(texto || filtroEstado)} onLimpiar={() => { setTexto(''); setFiltroEstado(''); }}>
+              <input type="search" value={texto} onChange={(e) => setTexto(e.target.value)} placeholder="Buscar paciente (apellido, nombre o DNI)" aria-label="Buscar paciente" />
+              <select value={filtroEstado} onChange={(e) => setFiltroEstado(e.target.value)} aria-label="Filtrar por estado">
+                <option value="">Estado: todos</option>
+                <option value="esperando">Por atender (pendientes y confirmados)</option>
+                {Object.keys(agenda.conteo).map((e) => <option key={e} value={e}>{ESTADOS[e]}</option>)}
+              </select>
+            </Filtros>
+          )}
+          {agenda.turnos.length > 0 && visibles.length === 0 && <p className="suave">Ningún turno coincide con el filtro.</p>}
+
+          {visibles.length > 0 && (
             <div className="panel">
               <table className="tabla">
                 <thead>
                   <tr><th>Hora</th><th>Paciente</th><th>Motivo</th><th>Estado</th><th /></tr>
                 </thead>
                 <tbody>
-                  {agenda.turnos.map((t) => {
+                  {visibles.map((t) => {
                     const abierto = ['pendiente', 'confirmado', 'en_atencion'].includes(t.estado);
                     return (
                       <tr key={t.id} style={t.estado === 'en_atencion' ? { fontWeight: 600 } : undefined}>

@@ -40,6 +40,19 @@ router.get('/', async (req, res) => {
     }
     condiciones.push(`(${partes.join(' OR ')})`);
   }
+  // Filtros extra: edad, solo con alergias, solo los que ya atendí
+  const EDADES = {
+    chicos: 'TIMESTAMPDIFF(YEAR, p.fecha_nacimiento, CURDATE()) < 18',
+    adultos: 'TIMESTAMPDIFF(YEAR, p.fecha_nacimiento, CURDATE()) BETWEEN 18 AND 64',
+    mayores: 'TIMESTAMPDIFF(YEAR, p.fecha_nacimiento, CURDATE()) >= 65',
+  };
+  if (EDADES[req.query.edad]) condiciones.push(EDADES[req.query.edad]);
+  if (req.query.alergias === '1') {
+    condiciones.push("NULLIF((SELECT f.alergias FROM fichas f WHERE f.paciente_id = u.id ORDER BY f.id DESC LIMIT 1), '') IS NOT NULL");
+  }
+  if (req.query.atendidos === '1') condiciones.push('t.consultas > 0');
+  // Orden: alfabético (por defecto) o los atendidos más recientemente primero
+  const orden = req.query.orden === 'recientes' ? 't.ultima IS NULL, t.ultima DESC, u.apellido, u.nombre' : 'u.apellido, u.nombre';
   const donde = condiciones.length ? `AND ${condiciones.join(' AND ')}` : '';
   const base = `
     FROM usuarios u
@@ -54,7 +67,7 @@ router.get('/', async (req, res) => {
     const [filas] = await pool.query(
       `SELECT u.id, u.nombre, u.apellido, u.dni, p.fecha_nacimiento, p.cobertura, t.ultima, t.consultas,
               (SELECT f.alergias FROM fichas f WHERE f.paciente_id = u.id ORDER BY f.id DESC LIMIT 1) AS alergias
-       ${base} ORDER BY u.apellido, u.nombre LIMIT ? OFFSET ?`,
+       ${base} ORDER BY ${orden} LIMIT ? OFFSET ?`,
       [...valores, POR_PAGINA, (pagina - 1) * POR_PAGINA]
     );
     res.json({

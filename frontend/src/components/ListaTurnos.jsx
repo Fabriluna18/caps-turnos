@@ -4,12 +4,15 @@ import { apiFetch } from '../api/client';
 import { mensajeDeError } from '../api/errores';
 import { ESTADOS } from '../estados';
 import { diaDeSemana, formatoFecha, hoyISO, sumarDias } from '../fechas';
+import Filtros from './Filtros';
 import Reprogramar from './Reprogramar';
 
-export default function ListaTurnos({ medicos }) {
-  const [filtros, setFiltros] = useState({
-    desde: hoyISO(), hasta: sumarDias(hoyISO(), 60), medico_id: '', estado: 'todos', q: '',
-  });
+const INICIALES = () => ({
+  desde: hoyISO(), hasta: sumarDias(hoyISO(), 60), especialidad_id: '', medico_id: '', estado: 'todos', franja: '', q: '',
+});
+
+export default function ListaTurnos({ medicos, especialidades = [] }) {
+  const [filtros, setFiltros] = useState(INICIALES);
   const [consulta, setConsulta] = useState(null);
   const [datos, setDatos] = useState(null);
   const [cargando, setCargando] = useState(false);
@@ -17,13 +20,22 @@ export default function ListaTurnos({ medicos }) {
   const [error, setError] = useState('');
   const [ok, setOk] = useState('');
 
-  const cambiar = (campo) => (e) => setFiltros({ ...filtros, [campo]: e.target.value });
+  // Al cambiar la especialidad se borra el médico elegido (puede ser de otra)
+  const cambiar = (campo) => (e) =>
+    setFiltros({ ...filtros, [campo]: e.target.value, ...(campo === 'especialidad_id' ? { medico_id: '' } : {}) });
+  const medicosFiltrados = filtros.especialidad_id
+    ? medicos.filter((m) => String(m.especialidad_id) === filtros.especialidad_id)
+    : medicos;
+  const base = INICIALES();
+  const hayFiltro = Object.keys(base).some((k) => filtros[k] !== base[k]);
 
   const consultar = async (f, pagina) => {
     setError('');
     setCargando(true);
     try {
       const params = new URLSearchParams({ desde: f.desde, hasta: f.hasta, estado: f.estado, pagina: String(pagina) });
+      if (f.especialidad_id) params.set('especialidad_id', f.especialidad_id);
+      if (f.franja) params.set('franja', f.franja);
       if (f.medico_id) params.set('medico_id', f.medico_id);
       if (f.q.trim()) params.set('q', f.q.trim());
       const r = await apiFetch(`/turnos?${params}`);
@@ -87,43 +99,55 @@ export default function ListaTurnos({ medicos }) {
 
       <div className="panel">
         <h2>Buscar turnos</h2>
-        <form onSubmit={buscar}>
-          <div className="filtros-turnos">
-            <label className="campo">
-              Desde
-              <input type="date" value={filtros.desde} onChange={cambiar('desde')} required />
-            </label>
-            <label className="campo">
-              Hasta
-              <input type="date" value={filtros.hasta} min={filtros.desde} onChange={cambiar('hasta')} required />
-            </label>
-            <label className="campo">
-              Médico
-              <select value={filtros.medico_id} onChange={cambiar('medico_id')}>
-                <option value="">Todos</option>
-                {medicos.map((m) => (
-                  <option key={m.id} value={m.id}>{m.apellido}, {m.nombre}</option>
-                ))}
-              </select>
-            </label>
-            <label className="campo">
-              Estado
-              <select value={filtros.estado} onChange={cambiar('estado')}>
-                <option value="todos">Todos</option>
-                {Object.entries(ESTADOS).map(([clave, nombre]) => (
-                  <option key={clave} value={clave}>{nombre}</option>
-                ))}
-              </select>
-            </label>
-            <label className="campo">
-              Paciente (opcional)
-              <input value={filtros.q} onChange={cambiar('q')} placeholder="Apellido, nombre o DNI" maxLength={60} />
-            </label>
-          </div>
-          <div className="acciones">
-            <button className="boton" type="submit" disabled={cargando}>{cargando ? 'Buscando...' : 'Buscar'}</button>
-          </div>
-        </form>
+        <p className="panel-subtitulo">Por privacidad, no se muestra ningún turno hasta que tocás Buscar.</p>
+        <Filtros onSubmit={buscar} hayFiltro={hayFiltro} onLimpiar={() => setFiltros(INICIALES())}>
+          <label className="campo">
+            Desde
+            <input type="date" value={filtros.desde} onChange={cambiar('desde')} required />
+          </label>
+          <label className="campo">
+            Hasta
+            <input type="date" value={filtros.hasta} min={filtros.desde} onChange={cambiar('hasta')} required />
+          </label>
+          <label className="campo">
+            Especialidad
+            <select value={filtros.especialidad_id} onChange={cambiar('especialidad_id')}>
+              <option value="">Todas</option>
+              {especialidades.map((e) => <option key={e.id} value={e.id}>{e.nombre}</option>)}
+            </select>
+          </label>
+          <label className="campo">
+            Médico
+            <select value={filtros.medico_id} onChange={cambiar('medico_id')}>
+              <option value="">Todos</option>
+              {medicosFiltrados.map((m) => (
+                <option key={m.id} value={m.id}>{m.apellido}, {m.nombre}{m.activo ? '' : ' (de baja)'}</option>
+              ))}
+            </select>
+          </label>
+          <label className="campo">
+            Estado
+            <select value={filtros.estado} onChange={cambiar('estado')}>
+              <option value="todos">Todos</option>
+              {Object.entries(ESTADOS).map(([clave, nombre]) => (
+                <option key={clave} value={clave}>{nombre}</option>
+              ))}
+            </select>
+          </label>
+          <label className="campo">
+            Horario
+            <select value={filtros.franja} onChange={cambiar('franja')}>
+              <option value="">Mañana y tarde</option>
+              <option value="manana">Solo mañana (antes de las 13)</option>
+              <option value="tarde">Solo tarde (desde las 13)</option>
+            </select>
+          </label>
+          <label className="campo">
+            Paciente (opcional)
+            <input value={filtros.q} onChange={cambiar('q')} placeholder="Apellido, nombre o DNI" maxLength={60} />
+          </label>
+          <button className="boton" type="submit" disabled={cargando}>{cargando ? 'Buscando...' : 'Buscar'}</button>
+        </Filtros>
       </div>
 
       {reprogramando && (

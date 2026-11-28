@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Ban, Pencil, RotateCcw, Trash2 } from 'lucide-react';
 import { apiFetch } from '../api/client';
 import { mensajeDeError } from '../api/errores';
+import Filtros from './Filtros';
 
 const DIAS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
 const DURACIONES = [10, 15, 20, 30, 40, 45, 60];
@@ -18,6 +19,8 @@ export default function HorariosSemanales({ medicoId }) {
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState('');
   const [ok, setOk] = useState('');
+  const [filtroDia, setFiltroDia] = useState('');
+  const [filtroEstado, setFiltroEstado] = useState('todos');
 
   const recargar = () =>
     apiFetch(`/horarios?medico_id=${medicoId}`)
@@ -114,10 +117,17 @@ export default function HorariosSemanales({ medicoId }) {
 
 
   const total = horarios.filter((h) => h.activo).reduce((suma, h) => suma + h.turnos, 0);
+  const visibles = horarios.filter((h) => {
+    if (filtroEstado === 'vigentes' && !h.activo) return false;
+    if (filtroEstado === 'desactivados' && h.activo) return false;
+    return !filtroDia || h.dia_semana === Number(filtroDia);
+  });
+  const hayFiltro = Boolean(filtroDia || filtroEstado !== 'todos');
 
   return (
     <div className="panel">
       <h2>Horarios semanales</h2>
+      <p className="panel-subtitulo">Los días y horas en que este médico da turnos todas las semanas.</p>
       {error && <p className="error" role="alert">{error}</p>}
       {ok && <p className="exito" role="status">{ok}</p>}
 
@@ -188,13 +198,27 @@ export default function HorariosSemanales({ medicoId }) {
       ) : (
         <>
           <p className="resumen-semana">Turnos por semana (solo los vigentes): <strong>{total}</strong></p>
+          {horarios.length > 2 && (
+            <Filtros clase="de-a-dos" hayFiltro={hayFiltro} onLimpiar={() => { setFiltroDia(''); setFiltroEstado('todos'); }}>
+              <select value={filtroDia} onChange={(e) => setFiltroDia(e.target.value)} aria-label="Filtrar por día">
+                <option value="">Día: todos</option>
+                {DIAS.map((nombre, i) => <option key={nombre} value={i + 1}>{nombre}</option>)}
+              </select>
+              <select value={filtroEstado} onChange={(e) => setFiltroEstado(e.target.value)} aria-label="Filtrar por estado">
+                <option value="todos">Estado: todos</option>
+                <option value="vigentes">Solo vigentes</option>
+                <option value="desactivados">Solo desactivados</option>
+              </select>
+            </Filtros>
+          )}
+          {visibles.length === 0 && <p className="suave">No hay horarios que coincidan con el filtro.</p>}
           <div className="tabla-scroll">
             <table className="tabla">
               <thead>
                 <tr><th>Día</th><th>Horario</th><th>Cada cuánto</th><th>Turnos</th><th>Estado</th><th></th></tr>
               </thead>
               <tbody>
-                {horarios.map((h) => (
+                {visibles.map((h) => (
                   <tr key={h.id} className={h.activo ? '' : 'fila-baja'}>
                     <td><strong>{DIAS[h.dia_semana - 1]}</strong></td>
                     <td>{h.hora_inicio} a {h.hora_fin}</td>

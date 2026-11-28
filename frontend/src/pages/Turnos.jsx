@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { apiFetch } from '../api/client';
 import { mensajeDeError } from '../api/errores';
+import Encabezado from '../components/Encabezado';
 import ListaTurnos from '../components/ListaTurnos';
 import SacarTurno from '../components/SacarTurno';
 
@@ -25,7 +26,12 @@ export default function Turnos() {
 
   return (
     <>
-      <h1>Turnos</h1>
+      <Encabezado
+        titulo="Turnos"
+        subtitulo={vista === 'sacar'
+          ? 'Reservá un turno: elegí el paciente, el médico, el día y la hora.'
+          : 'Buscá turnos ya reservados para confirmarlos, reprogramarlos o cancelarlos.'}
+      />
       {error && <p className="error" role="alert">{error}</p>}
 
       <div className="pestanas">
@@ -40,7 +46,7 @@ export default function Turnos() {
       {cargado && vista === 'sacar' && activos.length > 0 && (
         <SacarTurno medicos={activos} especialidades={especialidades} />
       )}
-      {cargado && vista === 'lista' && <ListaTurnos medicos={todos} />}
+      {cargado && vista === 'lista' && <ListaTurnos medicos={todos} especialidades={especialidades} />}
     </>
   );
 }
